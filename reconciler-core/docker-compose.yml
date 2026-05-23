@@ -1,0 +1,204 @@
+version: "3.9"
+
+# =============================================================
+# Reconciler – Local Dev Environment
+# Usage: docker-compose up -d
+# =============================================================
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+networks:
+  reconciler-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  nats-data:
+
+services:
+
+  # ─────────────────────────────────────────────────
+  # PostgreSQL 16 – primary database
+  # ─────────────────────────────────────────────────
+  postgres:
+    image: postgres:16
+    container_name: reconciler-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-reconciler}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reconciler_dev_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-reconciler}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - reconciler-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-reconciler} -d ${POSTGRES_DB:-reconciler}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    logging: *default-logging
+
+  # ─────────────────────────────────────────────────
+  # NATS – messaging with JetStream
+  # ─────────────────────────────────────────────────
+  nats:
+    image: nats:latest
+    container_name: reconciler-nats
+    restart: unless-stopped
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ./nats/nats.conf:/etc/nats/nats.conf:ro
+      - nats-data:/data/nats
+    ports:
+      - "4222:4222"   # Client connections
+      - "6222:6222"   # Cluster routing
+      - "8222:8222"   # HTTP monitoring
+    networks:
+      - reconciler-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8222/healthz || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    logging: *default-logging
+
+  # ─────────────────────────────────────────────────
+  # Redis 7 – cache and rate limiting
+  # ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: reconciler-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - reconciler-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    logging: *default-logging
+
+  # ─────────────────────────────────────────────────
+  # Reconciler API – main Rust service
+  # ─────────────────────────────────────────────────
+  reconciler-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: reconciler-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-reconciler}:${POSTGRES_PASSWORD:-reconciler_dev_secret}@postgres:5432/${POSTGRES_DB:-reconciler}
+      NATS_URL: nats://nats:4222
+      REDIS_URL: redis://redis:6379
+      API_HOST: 0.0.0.0
+      API_PORT: "8080"
+    ports:
+      - "8080:8080"
+    networks:
+      - reconciler-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging: *default-logging
+
+  # ─────────────────────────────────────────────────
+  # Reconciler Sandbox – payment sandbox simulator
+  # ─────────────────────────────────────────────────
+  reconciler-sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.sandbox
+    container_name: reconciler-sandbox
+    restart: unless-stopped
+    environment:
+      SANDBOX_PORT: "8081"
+      SANDBOX_SEED: "${SANDBOX_SEED:-42}"
+      NATS_URL: nats://nats:4222
+    ports:
+      - "8081:8081"
+    networks:
+      - reconciler-net
+    depends_on:
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging: *default-logging
+
+  # ─────────────────────────────────────────────────
+  # Adminer – database web UI
+  # ─────────────────────────────────────────────────
+  adminer:
+    image: adminer:latest
+    container_name: reconciler-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha-dark
+    ports:
+      - "8082:8080"
+    networks:
+      - reconciler-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *default-logging
+
+  # ─────────────────────────────────────────────────
+  # NATS Surveyor – NATS monitoring dashboard
+  # ─────────────────────────────────────────────────
+  nats-surveyor:
+    image: natsio/nats-surveyor:latest
+    container_name: reconciler-nats-surveyor
+    restart: unless-stopped
+    command:
+      - "-s"
+      - "nats://nats:4222"
+      - "--port"
+      - "8083"
+      - "--count"
+      - "1"
+    ports:
+      - "8083:8083"
+    networks:
+      - reconciler-net
+    depends_on:
+      nats:
+        condition: service_healthy
+    logging: *default-logging

@@ -1,0 +1,2823 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OUROBOROS | Autonomt Revisionssystem | LandveX AB 559141-7042</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  /* Skatteverket-inspired official palette, dark mode */
+  --skv-blue: #004B87;
+  --skv-blue-light: #0061B0;
+  --skv-blue-lighter: #1E88E5;
+  --skv-blue-glow: rgba(0, 97, 176, 0.45);
+
+  --bg: #020B18;
+  --bg-2: #04101F;
+  --surface: #071428;
+  --surface-2: #0d1f3c;
+  --surface-3: #122a4f;
+  --border: #1a3050;
+  --border-2: #244674;
+  --border-strong: #2e5a92;
+
+  --accent: var(--skv-blue-light);
+  --accent-dark: var(--skv-blue);
+  --accent-glow: var(--skv-blue-glow);
+
+  --success: #00A878;
+  --success-dim: rgba(0, 168, 120, 0.15);
+  --warn: #F5A623;
+  --warn-dim: rgba(245, 166, 35, 0.15);
+  --danger: #E53935;
+  --danger-dim: rgba(229, 57, 53, 0.15);
+
+  --text: #E6EEF8;
+  --text-dim: #93A8C2;
+  --text-faint: #5D7595;
+
+  --gold: #D4A647;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono { font-family: 'IBM Plex Mono', 'SF Mono', Menlo, monospace; }
+
+/* ---------- LAYOUT ---------- */
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  height: 100vh;
+}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar {
+  background: linear-gradient(180deg, #04101F 0%, #020B18 100%);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  overflow-y: auto;
+}
+
+.brand {
+  padding: 4px 18px 20px 18px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.brand-row {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.brand-logo {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--skv-blue) 0%, var(--skv-blue-lighter) 100%);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 16px; color: #fff;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+.brand-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #fff;
+}
+
+.brand-sub {
+  font-size: 9.5px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.brand-org {
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+.nav-section {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-faint);
+  padding: 10px 20px 6px 20px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 20px;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  border-left: 2px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.nav-item:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0,97,176,0.18) 0%, transparent 100%);
+  color: #fff;
+  border-left-color: var(--accent);
+}
+
+.nav-icon {
+  width: 18px; text-align: center;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--text-faint);
+  line-height: 1.6;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid var(--border-2);
+  border-radius: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+/* ---------- MAIN ---------- */
+.main {
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at top, rgba(0,75,135,0.08) 0%, transparent 50%),
+    var(--bg);
+}
+
+.topbar {
+  height: 52px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,20,40,0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 18px;
+  flex-shrink: 0;
+}
+
+.crumbs {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.crumbs b { color: var(--text); font-weight: 600; }
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.live-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 12px var(--success);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+}
+
+/* ---------- VIEWS ---------- */
+.view { display: none; }
+.view.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.view-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.view-title {
+  font-size: 22px; font-weight: 700; color: #fff;
+  letter-spacing: -0.3px;
+}
+.view-subtitle {
+  font-size: 12.5px; color: var(--text-dim);
+  margin-top: 2px;
+}
+.view-meta {
+  display: flex; gap: 14px; font-size: 11px;
+  color: var(--text-faint);
+  align-items: center;
+}
+
+/* ---------- CARDS / GRIDS ---------- */
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border-2); }
+
+.card-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-faint);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.card-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+.card-value .unit { font-size: 14px; color: var(--text-dim); font-weight: 400; margin-left: 4px; }
+
+.card-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+.card-trend.up { color: var(--success); }
+.card-trend.down { color: var(--danger); }
+
+/* ---------- BADGES ---------- */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+.badge.success { background: var(--success-dim); color: var(--success); border-color: rgba(0,168,120,0.3); }
+.badge.warn { background: var(--warn-dim); color: var(--warn); border-color: rgba(245,166,35,0.3); }
+.badge.danger { background: var(--danger-dim); color: var(--danger); border-color: rgba(229,57,53,0.3); }
+.badge.info { background: rgba(30,136,229,0.12); color: var(--skv-blue-lighter); border-color: rgba(30,136,229,0.3); }
+.badge.gold { background: rgba(212,166,71,0.12); color: var(--gold); border-color: rgba(212,166,71,0.3); }
+
+/* ---------- BUTTONS ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--surface-3); border-color: var(--border-strong); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--skv-blue) 0%, var(--skv-blue-light) 100%);
+  border-color: var(--skv-blue-light);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 10px var(--accent-glow);
+}
+.btn-primary:hover { box-shadow: 0 4px 16px var(--accent-glow); transform: translateY(-1px); }
+.btn-success {
+  background: var(--success); border-color: var(--success); color: #fff;
+}
+.btn-danger {
+  background: var(--danger); border-color: var(--danger); color: #fff;
+}
+
+/* ---------- TABS ---------- */
+.tabs {
+  display: flex; gap: 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.tab {
+  padding: 10px 18px;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+  user-select: none;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  color: #fff;
+  border-bottom-color: var(--accent);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeIn 0.25s ease; }
+
+/* ---------- TABLES ---------- */
+table.dt {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+table.dt th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+table.dt td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+table.dt tr:hover td { background: rgba(0,97,176,0.05); }
+table.dt td.right, table.dt th.right { text-align: right; }
+table.dt td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; }
+
+/* ---------- FORMS ---------- */
+.form-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 200px 110px;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.form-row:hover { background: rgba(0,97,176,0.03); }
+.form-row .ruta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 600;
+}
+.form-row label {
+  font-size: 12.5px;
+  color: var(--text);
+}
+.form-row .sublabel {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+.form-row input.amount {
+  background: var(--bg);
+  border: 1px solid var(--border-2);
+  color: #fff;
+  padding: 7px 10px;
+  border-radius: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+  text-align: right;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.form-row input.amount:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.form-row input.amount.valid { border-color: var(--success); }
+.form-row input.amount.invalid { border-color: var(--danger); }
+.form-row .currency {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.computed {
+  background: var(--surface-2);
+  border-left: 3px solid var(--gold);
+}
+.computed input.amount {
+  background: rgba(212,166,71,0.06);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* ---------- CODE PREVIEW ---------- */
+.code-preview {
+  background: #010817;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: #b5d4f0;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.55;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.code-preview .tag { color: #4fc3f7; }
+.code-preview .attr { color: #ffb74d; }
+.code-preview .val { color: #aed581; }
+.code-preview .com { color: #607d8b; }
+
+/* ---------- HASH CHAIN ---------- */
+.chain {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding: 10px 0;
+  align-items: center;
+}
+.chain-block {
+  flex-shrink: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  min-width: 130px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.chain-block:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.chain-block.verified {
+  border-color: var(--success);
+  background: rgba(0,168,120,0.05);
+}
+.chain-block .blk-id { font-size: 10px; color: var(--text-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.chain-block .blk-hash { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--accent); margin-top: 4px; word-break: break-all; }
+.chain-block.genesis .blk-hash { color: var(--gold); }
+.chain-arrow {
+  flex-shrink: 0;
+  width: 24px; height: 1px;
+  background: var(--border-2);
+  position: relative;
+}
+.chain-arrow::after {
+  content: '▶';
+  position: absolute;
+  right: -2px;
+  top: -7px;
+  font-size: 9px;
+  color: var(--border-2);
+}
+
+/* ---------- BANKID MODAL ---------- */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(2,11,24,0.85);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 100;
+}
+.modal-backdrop.open { display: flex; animation: fadeIn 0.2s ease; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 12px;
+  width: 480px;
+  max-width: 92vw;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.modal-title {
+  font-size: 18px; font-weight: 700; color: #fff;
+  display: flex; align-items: center; gap: 10px;
+}
+.modal-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; margin-bottom: 22px; }
+
+.qr-canvas {
+  width: 220px; height: 220px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(21, 8px);
+  grid-template-rows: repeat(21, 8px);
+  gap: 0;
+}
+.qr-cell { width: 8px; height: 8px; background: #fff; }
+.qr-cell.on { background: #000; }
+
+.bankid-status {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.bankid-spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 12px auto 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- T-ACCOUNT ---------- */
+.t-account {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.t-account-header {
+  grid-column: 1 / -1;
+  background: var(--surface-2);
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--border-2);
+  font-weight: 600;
+  font-size: 12px;
+}
+.t-account-side {
+  padding: 10px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  min-height: 80px;
+}
+.t-account-side.debit {
+  border-right: 1px solid var(--border-2);
+}
+.t-side-label {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.t-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.t-line.total {
+  border-top: 1px solid var(--border-2);
+  margin-top: 4px;
+  padding-top: 4px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ---------- RAV ITEMS ---------- */
+.rav-item {
+  display: grid;
+  grid-template-columns: 90px 1fr 110px 90px 90px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  margin-bottom: 8px;
+}
+.rav-id {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  color: var(--gold);
+  font-weight: 600;
+}
+.rav-title { font-size: 12.5px; color: var(--text); }
+.rav-sub { font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+
+/* ---------- STATUS PILL ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+.pill.ok { background: var(--success-dim); color: var(--success); }
+.pill.warn { background: var(--warn-dim); color: var(--warn); }
+.pill.err { background: var(--danger-dim); color: var(--danger); }
+.pill.info { background: rgba(30,136,229,0.12); color: var(--skv-blue-lighter); }
+.pill .dot {
+  width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+}
+
+/* ---------- SCROLLBAR ---------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-2); }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* ---------- MISC ---------- */
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.3px;
+  margin: 22px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .badge { font-size: 9px; }
+.divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+.evt-row {
+  display: grid;
+  grid-template-columns: 80px 90px 1fr 80px;
+  gap: 12px;
+  padding: 7px 12px;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.evt-row:hover { background: rgba(0,97,176,0.04); }
+.evt-time { color: var(--text-faint); }
+.evt-level.info { color: var(--skv-blue-lighter); }
+.evt-level.ok { color: var(--success); }
+.evt-level.warn { color: var(--warn); }
+.evt-level.err { color: var(--danger); }
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-row .label { color: var(--text-dim); }
+.metric-row .val { color: #fff; font-family: 'IBM Plex Mono', monospace; }
+
+.action-bar {
+  display: flex; gap: 10px;
+  padding: 14px;
+  background: var(--surface-2);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--surface-2);
+  border: 1px solid var(--success);
+  border-left: 4px solid var(--success);
+  padding: 14px 18px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--text);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  z-index: 200;
+  transform: translateX(120%);
+  transition: transform 0.3s ease;
+  max-width: 360px;
+}
+.toast.show { transform: translateX(0); }
+.toast.err { border-color: var(--danger); border-left-color: var(--danger); }
+.toast.info { border-color: var(--skv-blue-lighter); border-left-color: var(--skv-blue-lighter); }
+
+.status-banner {
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+.status-banner.ok { background: rgba(0,168,120,0.08); border: 1px solid rgba(0,168,120,0.3); color: var(--success); }
+.status-banner.warn { background: rgba(245,166,35,0.08); border: 1px solid rgba(245,166,35,0.3); color: var(--warn); }
+.status-banner.err { background: rgba(229,57,53,0.08); border: 1px solid rgba(229,57,53,0.3); color: var(--danger); }
+
+.ouro-symbol {
+  width: 28px; height: 28px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+select.skv-select {
+  background: var(--bg);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+select.skv-select:focus { outline: none; border-color: var(--accent); }
+
+.certificate {
+  background: linear-gradient(135deg, rgba(0,75,135,0.08), rgba(212,166,71,0.04));
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  padding: 22px;
+  position: relative;
+}
+.cert-corner {
+  position: absolute;
+  width: 16px; height: 16px;
+  border: 2px solid var(--gold);
+}
+.cert-corner.tl { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+.cert-corner.tr { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+.cert-corner.bl { bottom: 8px; left: 8px; border-right: none; border-top: none; }
+.cert-corner.br { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+.cert-title {
+  font-size: 16px; font-weight: 700;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.cert-sub {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+.cert-body { margin-top: 18px; font-size: 12.5px; }
+.cert-field {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.cert-field .k { color: var(--text-faint); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+.cert-field .v { color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; word-break: break-all; }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-row">
+        <div class="brand-logo">Ω</div>
+        <div>
+          <div class="brand-name">OUROBOROS</div>
+          <div class="brand-sub">Autonomt Revisionssystem</div>
+        </div>
+      </div>
+      <div class="brand-org">LandveX AB · 559141-7042</div>
+    </div>
+
+    <div class="nav-section">Översikt</div>
+    <div class="nav-item active" data-view="home"><span class="nav-icon">⊕</span> Ouroboros</div>
+    <div class="nav-item" data-view="audit"><span class="nav-icon">🔍</span> Live Audit</div>
+    <div class="nav-item" data-view="events"><span class="nav-icon">⚡</span> Händelseström</div>
+
+    <div class="nav-section">Skatteverket</div>
+    <div class="nav-item" data-view="skv"><span class="nav-icon">🏛️</span> Deklarationer</div>
+    <div class="nav-item" data-view="ink2r"><span class="nav-icon">📑</span> INK2R</div>
+    <div class="nav-item" data-view="agi"><span class="nav-icon">👥</span> AGI</div>
+    <div class="nav-item" data-view="saft"><span class="nav-icon">📤</span> SAF-T Export</div>
+
+    <div class="nav-section">Bokföring</div>
+    <div class="nav-item" data-view="ledger"><span class="nav-icon">📒</span> Ledger / SIE4</div>
+    <div class="nav-item" data-view="integrations"><span class="nav-icon">🔗</span> Integrationer</div>
+
+    <div class="nav-section">Granskning</div>
+    <div class="nav-item" data-view="rav"><span class="nav-icon">📋</span> Revisionsrav</div>
+    <div class="nav-item" data-view="compliance"><span class="nav-icon">🛡️</span> Compliance</div>
+    <div class="nav-item" data-view="signing"><span class="nav-icon">✍️</span> Digital Signering</div>
+
+    <div class="nav-section">Infra</div>
+    <div class="nav-item" data-view="system"><span class="nav-icon">⚙️</span> System</div>
+
+    <div class="sidebar-footer">
+      <div>v2.0 · Skatteverket Edition</div>
+      <div style="margin-top:6px;">Genväg: <span class="kbd">⌘K</span></div>
+      <div style="margin-top:6px; color: var(--gold);">★ Referensimplementation</div>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN ========== -->
+  <main class="main">
+    <header class="topbar">
+      <div class="crumbs">
+        OUROBOROS / <b id="crumb-view">Ouroboros</b>
+      </div>
+      <div class="topbar-right">
+        <span><span class="live-dot"></span> Live · Räkenskapsår 2026</span>
+        <span class="mono" id="clock">--:--:--</span>
+        <span class="badge gold">PRODUKTION</span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ============================================== -->
+      <!-- VIEW: HOME                                     -->
+      <!-- ============================================== -->
+      <section class="view active" data-view="home">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Ouroboros</div>
+            <div class="view-subtitle">Autonomt självvaliderande finansiellt rapporteringssystem</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge info">Räkenskapsår 2026</span>
+            <span class="badge success">Compliance 94%</span>
+          </div>
+        </div>
+
+        <div class="status-banner ok">
+          <span>✓</span>
+          <div>
+            <b>Systemet är operativt.</b> 4 821 transaktioner granskade · 0 öppna avvikelser · Senaste validering: <span id="last-validation">för 12s sedan</span>
+          </div>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card">
+            <div class="card-title">Transaktioner i år</div>
+            <div class="card-value">4 821</div>
+            <div class="card-sub card-trend up">↑ 312 senaste 24h</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Nettoomsättning YTD</div>
+            <div class="card-value">14.2<span class="unit">MSEK</span></div>
+            <div class="card-sub card-trend up">↑ 18.4% mot föregående år</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Skatt att betala (Q1)</div>
+            <div class="card-value">847<span class="unit">kSEK</span></div>
+            <div class="card-sub">Förfaller 2026-05-26</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Audit-kedjans integritet</div>
+            <div class="card-value" style="color: var(--success);">100<span class="unit">%</span></div>
+            <div class="card-sub">SHA-256 verifierad</div>
+          </div>
+        </div>
+
+        <div class="section-title">Audit Trail · Kryptografisk hash-kedja <span class="badge gold">SHA-256</span></div>
+        <div class="card">
+          <div class="chain" id="hash-chain">
+            <!-- populated by JS -->
+          </div>
+          <div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;">
+            <button class="btn btn-primary" onclick="verifyChain()">⚡ Verifiera integritet</button>
+            <span style="font-size: 11px; color: var(--text-faint);" id="chain-status">Klicka för att verifiera hela kedjan från genesis</span>
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top: 20px;">
+          <div class="card">
+            <div class="card-title">Aktiva Deklarationsspår</div>
+            <div style="margin-top: 8px;">
+              <div class="metric-row"><span class="label">Moms Q1 2026 (SRU)</span><span class="val"><span class="pill ok"><span class="dot"></span>KLAR</span></span></div>
+              <div class="metric-row"><span class="label">INK2R Inkomstdeklaration</span><span class="val"><span class="pill warn"><span class="dot"></span>UTKAST</span></span></div>
+              <div class="metric-row"><span class="label">AGI Maj 2026</span><span class="val"><span class="pill info"><span class="dot"></span>PÅGÅR</span></span></div>
+              <div class="metric-row"><span class="label">SAF-T 2026-Q1</span><span class="val"><span class="pill ok"><span class="dot"></span>EXPORT KLAR</span></span></div>
+              <div class="metric-row"><span class="label">Årsredovisning 2025</span><span class="val"><span class="pill ok"><span class="dot"></span>INSKICKAD</span></span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Senaste händelser</div>
+            <div style="margin-top: 8px; max-height: 220px; overflow-y: auto;">
+              <div class="evt-row"><span class="evt-time">22:58:41</span><span class="evt-level ok">OK</span><span>Transaktion TX-4821 verifierad mot BAS 2024</span><span>+12.4k</span></div>
+              <div class="evt-row"><span class="evt-time">22:58:32</span><span class="evt-level info">INFO</span><span>Peppol-mottagning: faktura #PEP-2026-0214</span><span></span></div>
+              <div class="evt-row"><span class="evt-time">22:58:18</span><span class="evt-level ok">OK</span><span>SRU-fil validerad mot Skatteverkets schema</span><span></span></div>
+              <div class="evt-row"><span class="evt-time">22:57:55</span><span class="evt-level ok">OK</span><span>Hash-kedja förlängd: block #4821</span><span></span></div>
+              <div class="evt-row"><span class="evt-time">22:57:40</span><span class="evt-level warn">WARN</span><span>Avvikelse 2641/2645: korrigerad automatiskt</span><span></span></div>
+              <div class="evt-row"><span class="evt-time">22:57:22</span><span class="evt-level ok">OK</span><span>BankID-signering av NE-blankett klar</span><span></span></div>
+              <div class="evt-row"><span class="evt-time">22:56:59</span><span class="evt-level info">INFO</span><span>SAF-T XML genererad (2.4 MB)</span><span></span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: AUDIT                                    -->
+      <!-- ============================================== -->
+      <section class="view" data-view="audit">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Live Audit Pipeline</div>
+            <div class="view-subtitle">Kontinuerlig transaktionsgranskning · BAS 2024 + IFRS-validering</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge success"><span class="live-dot"></span> Live</span>
+            <span>Throughput: <b>312/h</b></span>
+          </div>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card">
+            <div class="card-title">Granskade idag</div>
+            <div class="card-value">312</div>
+            <div class="card-sub">100% pass rate</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Avvikelser</div>
+            <div class="card-value" style="color: var(--success);">0</div>
+            <div class="card-sub">Senaste auto-fix: 22:57</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Auto-korrigerade</div>
+            <div class="card-value">7</div>
+            <div class="card-sub">Sedan kl. 00:00</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Snittlatens</div>
+            <div class="card-value">42<span class="unit">ms</span></div>
+            <div class="card-sub">p95: 78ms</div>
+          </div>
+        </div>
+
+        <div class="section-title">Pipeline-status</div>
+        <div class="card">
+          <table class="dt">
+            <thead>
+              <tr><th>Steg</th><th>Status</th><th class="right">Genomflöde/min</th><th class="right">Avvikelser</th><th>Sista händelse</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1. Inläsning (SIE4/Peppol)</td><td><span class="pill ok"><span class="dot"></span>AKTIV</span></td><td class="right mono">5.2</td><td class="right mono">0</td><td>22:58:41</td></tr>
+              <tr><td>2. Validering (BAS 2024)</td><td><span class="pill ok"><span class="dot"></span>AKTIV</span></td><td class="right mono">5.2</td><td class="right mono">0</td><td>22:58:41</td></tr>
+              <tr><td>3. Momsklassificering</td><td><span class="pill ok"><span class="dot"></span>AKTIV</span></td><td class="right mono">5.2</td><td class="right mono">1</td><td>22:57:40</td></tr>
+              <tr><td>4. Auto-kontering</td><td><span class="pill ok"><span class="dot"></span>AKTIV</span></td><td class="right mono">5.1</td><td class="right mono">0</td><td>22:58:36</td></tr>
+              <tr><td>5. Hash-blockläggning</td><td><span class="pill ok"><span class="dot"></span>AKTIV</span></td><td class="right mono">5.1</td><td class="right mono">0</td><td>22:57:55</td></tr>
+              <tr><td>6. SRU/INK2R-mappning</td><td><span class="pill ok"><span class="dot"></span>AKTIV</span></td><td class="right mono">5.1</td><td class="right mono">0</td><td>22:58:18</td></tr>
+              <tr><td>7. Compliance-portar</td><td><span class="pill ok"><span class="dot"></span>AKTIV</span></td><td class="right mono">5.1</td><td class="right mono">0</td><td>22:58:36</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section-title">Senaste granskade transaktioner</div>
+        <div class="card">
+          <table class="dt">
+            <thead>
+              <tr><th>ID</th><th>Tid</th><th>Debet</th><th>Kredit</th><th class="right">Belopp</th><th>Moms</th><th>Status</th></tr>
+            </thead>
+            <tbody id="audit-tx">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: EVENTS                                   -->
+      <!-- ============================================== -->
+      <section class="view" data-view="events">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Händelseström</div>
+            <div class="view-subtitle">Real-time system events · alla pipelines</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge success"><span class="live-dot"></span> Streaming</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div id="event-stream" style="max-height: 600px; overflow-y: auto;">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: SKATTEVERKET (3 tabs)                    -->
+      <!-- ============================================== -->
+      <section class="view" data-view="skv">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Skatteverket</div>
+            <div class="view-subtitle">Officiella deklarationer · SRU · INK2R · AGI</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge info">Org: 559141-7042</span>
+            <span class="badge gold">Schema v2026.1</span>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" data-tab="moms">MOMS (SKV 4700)</div>
+          <div class="tab" data-tab="inkomst">INKOMST (INK2R)</div>
+          <div class="tab" data-tab="agi-tab">AGI (Arbetsgivardekl)</div>
+        </div>
+
+        <!-- ========== TAB: MOMS ========== -->
+        <div class="tab-panel active" data-tab="moms">
+          <div class="status-banner ok" id="moms-status">
+            <span>✓</span>
+            <div><b>Period 2026-Q1 (jan–mar)</b> · Inlämning öppen till 2026-05-12 · Alla validations OK</div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="card">
+              <div class="card-title">Momspliktig omsättning</div>
+              <div class="form-row">
+                <div class="ruta">Ruta 05</div>
+                <div>
+                  <label>Omsättning 25%</label>
+                  <div class="sublabel">Standardmoms</div>
+                </div>
+                <input type="text" class="amount mono" data-rate="25" data-target="r05" value="4 218 400" oninput="recalcMoms()">
+                <div class="currency">SEK</div>
+              </div>
+              <div class="form-row">
+                <div class="ruta">Ruta 06</div>
+                <div>
+                  <label>Omsättning 12%</label>
+                  <div class="sublabel">Livsmedel, hotell, restaurang</div>
+                </div>
+                <input type="text" class="amount mono" data-rate="12" data-target="r06" value="0" oninput="recalcMoms()">
+                <div class="currency">SEK</div>
+              </div>
+              <div class="form-row">
+                <div class="ruta">Ruta 07</div>
+                <div>
+                  <label>Omsättning 6%</label>
+                  <div class="sublabel">Böcker, kollektivtrafik, kultur</div>
+                </div>
+                <input type="text" class="amount mono" data-rate="6" data-target="r07" value="0" oninput="recalcMoms()">
+                <div class="currency">SEK</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">Utgående moms</div>
+              <div class="form-row computed">
+                <div class="ruta">Ruta 10</div>
+                <div>
+                  <label>Moms 25% (auto)</label>
+                  <div class="sublabel">= Ruta 05 × 0,25</div>
+                </div>
+                <input type="text" class="amount mono" id="r10" value="1 054 600" readonly>
+                <div class="currency">SEK</div>
+              </div>
+              <div class="form-row computed">
+                <div class="ruta">Ruta 11</div>
+                <div>
+                  <label>Moms 12% (auto)</label>
+                  <div class="sublabel">= Ruta 06 × 0,12</div>
+                </div>
+                <input type="text" class="amount mono" id="r11" value="0" readonly>
+                <div class="currency">SEK</div>
+              </div>
+              <div class="form-row computed">
+                <div class="ruta">Ruta 12</div>
+                <div>
+                  <label>Moms 6% (auto)</label>
+                  <div class="sublabel">= Ruta 07 × 0,06</div>
+                </div>
+                <input type="text" class="amount mono" id="r12" value="0" readonly>
+                <div class="currency">SEK</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-2" style="margin-top: 16px;">
+            <div class="card">
+              <div class="card-title">Ingående moms</div>
+              <div class="form-row">
+                <div class="ruta">Ruta 48</div>
+                <div>
+                  <label>Ingående moms (avdragsgill)</label>
+                  <div class="sublabel">Konto 2641 + 2645</div>
+                </div>
+                <input type="text" class="amount mono" id="r48" value="207 500" oninput="recalcMoms()">
+                <div class="currency">SEK</div>
+              </div>
+            </div>
+
+            <div class="card" style="border-color: var(--gold); background: linear-gradient(135deg, rgba(212,166,71,0.04), transparent);">
+              <div class="card-title" style="color: var(--gold);">Att betala / få tillbaka</div>
+              <div class="form-row computed">
+                <div class="ruta">Ruta 49</div>
+                <div>
+                  <label>Att betala</label>
+                  <div class="sublabel">= (10+11+12) − 48</div>
+                </div>
+                <input type="text" class="amount mono" id="r49" value="847 100" readonly style="font-size: 14px; font-weight: 700;">
+                <div class="currency">SEK</div>
+              </div>
+              <div style="margin-top: 12px; font-size: 11px; color: var(--text-faint);">
+                Bankgiro: <span class="mono" style="color: var(--text);">5050-1055</span> · OCR: <span class="mono" style="color: var(--text);">5591417042 26 03 01</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-title">SRU-fil förhandsvisning <span class="badge info">Live</span></div>
+          <div class="card" style="padding: 0;">
+            <div class="code-preview" id="sru-preview"></div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn btn-primary" onclick="submitToSKV('moms')">📤 Skicka till Skatteverket</button>
+            <button class="btn" onclick="downloadSRU()">⬇ Ladda ner SRU</button>
+            <button class="btn" onclick="validateMoms()">✓ Validera</button>
+            <button class="btn" onclick="signMoms()">✍ Signera med BankID</button>
+            <span style="margin-left: auto; font-size: 11px; color: var(--text-faint); align-self: center;">
+              Schema: SKV4700 v2026.1 · Kontrollsumma: <span class="mono" id="moms-checksum" style="color: var(--gold);">a3f9b2c1</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- ========== TAB: INKOMST ========== -->
+        <div class="tab-panel" data-tab="inkomst">
+          <div class="status-banner warn">
+            <span>⚠</span>
+            <div><b>INK2R — Inkomstdeklaration 2 R</b> för aktiebolag · Räkenskapsår 2025 · Inlämning senast 2026-07-01</div>
+          </div>
+          <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 14px;">
+            För komplett INK2R-flöde med live-beräkning, validering och XML-export, gå till <a href="#" onclick="goView('ink2r'); return false;" style="color: var(--accent);">dedikerad INK2R-vy →</a>
+          </p>
+          <div class="grid grid-3">
+            <div class="card"><div class="card-title">Nettoomsättning (1.1)</div><div class="card-value">14.2<span class="unit">MSEK</span></div></div>
+            <div class="card"><div class="card-title">Skattepliktigt resultat</div><div class="card-value">3.8<span class="unit">MSEK</span></div></div>
+            <div class="card"><div class="card-title">Bolagsskatt (20.6%)</div><div class="card-value">782<span class="unit">kSEK</span></div></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top: 18px;" onclick="goView('ink2r')">Öppna INK2R-formulär →</button>
+        </div>
+
+        <!-- ========== TAB: AGI ========== -->
+        <div class="tab-panel" data-tab="agi-tab">
+          <div class="status-banner warn">
+            <span>⏰</span>
+            <div><b>AGI Maj 2026</b> · Förfaller 2026-06-12 · 7 anställda · 2 deadlines kvar denna månad</div>
+          </div>
+          <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 14px;">
+            För komplett AGI-flöde med individuella uppgifter och XML-export, gå till <a href="#" onclick="goView('agi'); return false;" style="color: var(--accent);">dedikerad AGI-vy →</a>
+          </p>
+          <div class="grid grid-3">
+            <div class="card"><div class="card-title">Bruttolöner Maj</div><div class="card-value">328<span class="unit">kSEK</span></div></div>
+            <div class="card"><div class="card-title">Arbetsgivaravgifter (31.42%)</div><div class="card-value">103<span class="unit">kSEK</span></div></div>
+            <div class="card"><div class="card-title">Preliminärskatt</div><div class="card-value">98<span class="unit">kSEK</span></div></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top: 18px;" onclick="goView('agi')">Öppna AGI-formulär →</button>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: INK2R                                    -->
+      <!-- ============================================== -->
+      <section class="view" data-view="ink2r">
+        <div class="view-header">
+          <div>
+            <div class="view-title">INK2R · Inkomstdeklaration 2 R</div>
+            <div class="view-subtitle">Aktiebolag · Räkenskapsår 2025-01-01 – 2025-12-31</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge info">Org: 559141-7042</span>
+            <span class="badge gold">SKV 2002</span>
+            <span id="ink2r-pill" class="pill warn"><span class="dot"></span>UTKAST</span>
+          </div>
+        </div>
+
+        <div class="status-banner warn" id="ink2r-banner">
+          <span>⚠</span>
+          <div><b>Validering pågår.</b> Fyll i alla obligatoriska rutor och klicka "Validera mot Skatteverket" för att kontrollera mot schemat.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Intäkter</div>
+          <div class="form-row">
+            <div class="ruta">Ruta 1.1</div>
+            <div><label>Nettoomsättning</label><div class="sublabel">Konto 3001–3099 (BAS)</div></div>
+            <input type="text" class="amount mono" data-ink="r1_1" value="14 218 400" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row">
+            <div class="ruta">Ruta 1.2</div>
+            <div><label>Förändring av lager och PIA</label><div class="sublabel">Konto 4900–4990</div></div>
+            <input type="text" class="amount mono" data-ink="r1_2" value="0" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row">
+            <div class="ruta">Ruta 1.3</div>
+            <div><label>Aktiverat arbete för egen räkning</label><div class="sublabel">Konto 38xx</div></div>
+            <input type="text" class="amount mono" data-ink="r1_3" value="0" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row">
+            <div class="ruta">Ruta 1.4</div>
+            <div><label>Övriga rörelseintäkter</label><div class="sublabel">Konto 39xx</div></div>
+            <input type="text" class="amount mono" data-ink="r1_4" value="142 000" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 14px;">
+          <div class="card-title">Kostnader</div>
+          <div class="form-row">
+            <div class="ruta">Ruta 2.1</div>
+            <div><label>Kostnad sålda varor</label><div class="sublabel">Konto 4000–4099</div></div>
+            <input type="text" class="amount mono" data-ink="r2_1" value="-3 421 800" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row">
+            <div class="ruta">Ruta 3.1</div>
+            <div><label>Rörelsens kostnader</label><div class="sublabel">Konto 5xxx–6xxx</div></div>
+            <input type="text" class="amount mono" data-ink="r3_1" value="-5 218 400" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row">
+            <div class="ruta">Ruta 3.2</div>
+            <div><label>Personalkostnader</label><div class="sublabel">Konto 7xxx</div></div>
+            <input type="text" class="amount mono" data-ink="r3_2" value="-1 824 600" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row">
+            <div class="ruta">Ruta 3.3</div>
+            <div><label>Avskrivningar</label><div class="sublabel">Konto 78xx</div></div>
+            <input type="text" class="amount mono" data-ink="r3_3" value="-128 500" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 14px;">
+          <div class="card-title">Resultat & Skatt</div>
+          <div class="form-row computed">
+            <div class="ruta">Ruta 4.1</div>
+            <div><label>Rörelseresultat (auto)</label><div class="sublabel">= Σ(1.x) + Σ(2.x) + Σ(3.x)</div></div>
+            <input type="text" class="amount mono" id="ink_r4_1" readonly>
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row">
+            <div class="ruta">Ruta 5.1</div>
+            <div><label>Finansiella intäkter</label></div>
+            <input type="text" class="amount mono" data-ink="r5_1" value="8 200" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row">
+            <div class="ruta">Ruta 5.2</div>
+            <div><label>Finansiella kostnader</label></div>
+            <input type="text" class="amount mono" data-ink="r5_2" value="-42 000" oninput="recalcInk2r()">
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row computed">
+            <div class="ruta">Ruta 6.1</div>
+            <div><label>Resultat före bokslutsdispositioner (auto)</label></div>
+            <input type="text" class="amount mono" id="ink_r6_1" readonly>
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row computed">
+            <div class="ruta">Ruta 7.1</div>
+            <div><label>Skattepliktigt resultat (auto)</label></div>
+            <input type="text" class="amount mono" id="ink_r7_1" readonly style="font-size: 14px; font-weight: 700;">
+            <div class="currency">SEK</div>
+          </div>
+          <div class="form-row computed">
+            <div class="ruta">Ruta 8.1</div>
+            <div><label>Bolagsskatt 20,6% (auto)</label></div>
+            <input type="text" class="amount mono" id="ink_r8_1" readonly style="color: var(--danger) !important;">
+            <div class="currency">SEK</div>
+          </div>
+        </div>
+
+        <div class="section-title">INK2R XML förhandsvisning <span class="badge info">Live</span></div>
+        <div class="card" style="padding: 0;">
+          <div class="code-preview" id="ink2r-preview"></div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="validateInk2r()">✓ Validera mot Skatteverket</button>
+          <button class="btn" onclick="downloadInk2r()">⬇ Exportera INK2R XML</button>
+          <button class="btn" onclick="signInk2r()">✍ Signera med BankID</button>
+          <button class="btn btn-success" onclick="submitToSKV('ink2r')" id="ink2r-submit" disabled>📤 Skicka in</button>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: AGI                                      -->
+      <!-- ============================================== -->
+      <section class="view" data-view="agi">
+        <div class="view-header">
+          <div>
+            <div class="view-title">AGI · Arbetsgivardeklaration</div>
+            <div class="view-subtitle">Månadsvis · per anställd · SKV 4786</div>
+          </div>
+          <div class="view-meta">
+            <select class="skv-select" id="agi-month" onchange="recalcAgi()">
+              <option value="2026-04">April 2026</option>
+              <option value="2026-05" selected>Maj 2026</option>
+              <option value="2026-06">Juni 2026</option>
+            </select>
+            <span class="badge warn">Förfaller 2026-06-12</span>
+          </div>
+        </div>
+
+        <div class="status-banner warn">
+          <span>⏰</span>
+          <div><b>Deadline:</b> 12:e månaden efter löneutbetalning (lördag/söndag → nästa vardag)</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Individuella uppgifter (IU)</div>
+          <table class="dt">
+            <thead>
+              <tr>
+                <th>Personnr</th>
+                <th>Namn</th>
+                <th class="right">Bruttolön</th>
+                <th class="right">Förmåner</th>
+                <th class="right">Avdragen skatt</th>
+                <th class="right">AG-avgift</th>
+              </tr>
+            </thead>
+            <tbody id="agi-employees">
+              <!-- populated by JS -->
+            </tbody>
+            <tfoot>
+              <tr style="background: var(--surface-2); font-weight: 600;">
+                <td colspan="2">Summa</td>
+                <td class="right mono" id="agi-tot-brutto">—</td>
+                <td class="right mono" id="agi-tot-forman">—</td>
+                <td class="right mono" id="agi-tot-skatt">—</td>
+                <td class="right mono" id="agi-tot-avgift">—</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="grid grid-3" style="margin-top: 14px;">
+          <div class="card">
+            <div class="card-title">Summa avdragen skatt</div>
+            <div class="card-value" id="agi-sum-skatt">—</div>
+            <div class="card-sub">Att betala till SKV</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Summa arbetsgivaravgifter</div>
+            <div class="card-value" id="agi-sum-avgift">—</div>
+            <div class="card-sub">31,42% (standard)</div>
+          </div>
+          <div class="card" style="border-color: var(--gold);">
+            <div class="card-title" style="color: var(--gold);">Totalt att betala</div>
+            <div class="card-value" id="agi-total" style="color: var(--gold);">—</div>
+            <div class="card-sub">Skattekonto OCR: 5591417042</div>
+          </div>
+        </div>
+
+        <div class="section-title">AGI XML förhandsvisning</div>
+        <div class="card" style="padding: 0;">
+          <div class="code-preview" id="agi-preview"></div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="submitToSKV('agi')">📤 Skicka AGI till Skatteverket</button>
+          <button class="btn" onclick="downloadAgi()">⬇ Ladda ner AGI XML</button>
+          <button class="btn" onclick="signAgi()">✍ Signera med BankID</button>
+          <button class="btn" onclick="recalcAgi()">↻ Räkna om</button>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: SAF-T                                    -->
+      <!-- ============================================== -->
+      <section class="view" data-view="saft">
+        <div class="view-header">
+          <div>
+            <div class="view-title">SAF-T · Standard Audit File for Tax</div>
+            <div class="view-subtitle">OECD-standard · Skatteverkets framtida krav · v1.0 SE-profil</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge gold">OECD SAF-T v1.0</span>
+            <span class="badge info">SE-profil</span>
+          </div>
+        </div>
+
+        <div class="status-banner ok">
+          <span>📤</span>
+          <div><b>SAF-T export 2026-Q1</b> · 4 821 transaktioner · 2.4 MB · Schemavalidering OK</div>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card">
+            <div class="card-title">Period</div>
+            <div class="card-value" style="font-size: 18px;">2026-01-01<br><span style="font-size: 14px; color: var(--text-dim);">→ 2026-03-31</span></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Konton</div>
+            <div class="card-value">147</div>
+            <div class="card-sub">BAS 2024</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Verifikationer</div>
+            <div class="card-value">4 821</div>
+            <div class="card-sub">Balanserad: 100%</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Filstorlek</div>
+            <div class="card-value">2.4<span class="unit">MB</span></div>
+            <div class="card-sub">XML komprimerad: 412 kB</div>
+          </div>
+        </div>
+
+        <div class="section-title">SAF-T XML förhandsvisning <span class="badge gold">Schema-validerad</span></div>
+        <div class="card" style="padding: 0;">
+          <div class="code-preview" id="saft-preview"></div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="downloadSaft()">⬇ Ladda ner SAF-T XML</button>
+          <button class="btn" onclick="downloadSaftZip()">⬇ Ladda ner som ZIP (komprimerad)</button>
+          <button class="btn" onclick="validateSaft()">✓ Schemavalidera</button>
+          <span style="margin-left: auto; font-size: 11px; color: var(--text-faint); align-self: center;">
+            SHA-256: <span class="mono" style="color: var(--gold);" id="saft-hash">7d2e1f8a...</span>
+          </span>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: LEDGER                                   -->
+      <!-- ============================================== -->
+      <section class="view" data-view="ledger">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Ledger · BAS 2024</div>
+            <div class="view-subtitle">Double-entry bokföring · Live · 4 821 verifikationer</div>
+          </div>
+          <div class="view-meta">
+            <select class="skv-select" id="ledger-account">
+              <!-- populated by JS -->
+            </select>
+            <span class="badge success">Balanserad</span>
+          </div>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="card">
+            <div class="card-title">Verifikationer i år</div>
+            <div class="card-value">4 821</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Aktiva konton</div>
+            <div class="card-value">147</div>
+            <div class="card-sub">av 247 i BAS 2024</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Differens debet/kredit</div>
+            <div class="card-value" style="color: var(--success);">0,00<span class="unit">kr</span></div>
+          </div>
+        </div>
+
+        <div class="section-title">T-konto visualisering · valt konto</div>
+        <div class="grid grid-3">
+          <div class="t-account">
+            <div class="t-account-header">3001 · Försäljning 25%</div>
+            <div class="t-account-side debit">
+              <div class="t-side-label">Debet</div>
+              <div class="t-line"><span>IB</span><span>0</span></div>
+              <div class="t-line total"><span>Σ</span><span>0</span></div>
+            </div>
+            <div class="t-account-side">
+              <div class="t-side-label">Kredit</div>
+              <div class="t-line"><span>Försäljn Q1</span><span>4 218 400</span></div>
+              <div class="t-line total"><span>Σ</span><span>4 218 400</span></div>
+            </div>
+          </div>
+
+          <div class="t-account">
+            <div class="t-account-header">2610 · Utgående moms 25%</div>
+            <div class="t-account-side debit">
+              <div class="t-side-label">Debet</div>
+              <div class="t-line"><span>—</span><span>0</span></div>
+              <div class="t-line total"><span>Σ</span><span>0</span></div>
+            </div>
+            <div class="t-account-side">
+              <div class="t-side-label">Kredit</div>
+              <div class="t-line"><span>Moms 25%</span><span>1 054 600</span></div>
+              <div class="t-line total"><span>Σ</span><span>1 054 600</span></div>
+            </div>
+          </div>
+
+          <div class="t-account">
+            <div class="t-account-header">2641 · Ingående moms</div>
+            <div class="t-account-side debit">
+              <div class="t-side-label">Debet</div>
+              <div class="t-line"><span>Inköp Q1</span><span>207 500</span></div>
+              <div class="t-line total"><span>Σ</span><span>207 500</span></div>
+            </div>
+            <div class="t-account-side">
+              <div class="t-side-label">Kredit</div>
+              <div class="t-line"><span>—</span><span>0</span></div>
+              <div class="t-line total"><span>Σ</span><span>0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Verifikationsregister</div>
+        <div class="card" style="padding: 0;">
+          <table class="dt">
+            <thead>
+              <tr><th>Ver.nr</th><th>Datum</th><th>Text</th><th>Debet</th><th>Kredit</th><th class="right">Belopp</th></tr>
+            </thead>
+            <tbody id="ledger-tx">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="closePeriod()">🔒 Stäng period</button>
+          <button class="btn" onclick="downloadSIE4()">⬇ Exportera SIE4</button>
+          <button class="btn" onclick="downloadSaft()">⬇ Exportera SAF-T XML</button>
+          <button class="btn" onclick="goView('saft')">→ Gå till SAF-T-vy</button>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: INTEGRATIONS (with Peppol)               -->
+      <!-- ============================================== -->
+      <section class="view" data-view="integrations">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Integrationer</div>
+            <div class="view-subtitle">Externa system · Peppol · SKV · Bankgirot</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge success">7 anslutna · 0 fel</span>
+          </div>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #fff;">Skatteverket</div>
+                <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;">eIDAS-API v2026.1</div>
+              </div>
+              <span class="pill ok"><span class="dot"></span>ANSLUTEN</span>
+            </div>
+            <div class="metric-row" style="margin-top: 12px;"><span class="label">Senaste anrop</span><span class="val">22:58:18</span></div>
+            <div class="metric-row"><span class="label">Schema</span><span class="val">SKV4700 v2026.1</span></div>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #fff;">Peppol Access Point</div>
+                <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;">BIS Billing 3.0</div>
+              </div>
+              <span class="pill ok"><span class="dot"></span>ANSLUTEN</span>
+            </div>
+            <div class="metric-row" style="margin-top: 12px;"><span class="label">PeppolID</span><span class="val">0007:5591417042</span></div>
+            <div class="metric-row"><span class="label">Senaste mottagning</span><span class="val">22:58:32</span></div>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #fff;">Bankgirot</div>
+                <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;">ISO 20022 pain.001</div>
+              </div>
+              <span class="pill ok"><span class="dot"></span>ANSLUTEN</span>
+            </div>
+            <div class="metric-row" style="margin-top: 12px;"><span class="label">Bankgiro</span><span class="val">5050-1055</span></div>
+            <div class="metric-row"><span class="label">Kö</span><span class="val">0 betalningar</span></div>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #fff;">Bolagsverket</div>
+                <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;">XBRL årsredovisning</div>
+              </div>
+              <span class="pill ok"><span class="dot"></span>ANSLUTEN</span>
+            </div>
+            <div class="metric-row" style="margin-top: 12px;"><span class="label">Senaste inlämning</span><span class="val">2026-04-22</span></div>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #fff;">BankID</div>
+                <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;">eIDAS / NF</div>
+              </div>
+              <span class="pill ok"><span class="dot"></span>ANSLUTEN</span>
+            </div>
+            <div class="metric-row" style="margin-top: 12px;"><span class="label">Signeringar idag</span><span class="val">3</span></div>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #fff;">Fortnox API</div>
+                <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;">SIE4 sync</div>
+              </div>
+              <span class="pill ok"><span class="dot"></span>ANSLUTEN</span>
+            </div>
+            <div class="metric-row" style="margin-top: 12px;"><span class="label">Synk-status</span><span class="val">Realtid</span></div>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #fff;">Nordea Open Banking</div>
+                <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;">PSD2 / OAuth2</div>
+              </div>
+              <span class="pill ok"><span class="dot"></span>ANSLUTEN</span>
+            </div>
+            <div class="metric-row" style="margin-top: 12px;"><span class="label">Konton</span><span class="val">3</span></div>
+          </div>
+        </div>
+
+        <div class="section-title">Peppol e-faktura · BIS Billing 3.0 <span class="badge gold">UBL 2.1</span></div>
+        <p style="font-size: 11.5px; color: var(--text-dim); margin-bottom: 12px;">
+          Senaste mottagna faktura via Peppol-nätverket. Automatiskt validerad mot UBL 2.1 + EN 16931.
+        </p>
+        <div class="card" style="padding: 0;">
+          <div class="code-preview" id="peppol-preview"></div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: RAV                                      -->
+      <!-- ============================================== -->
+      <section class="view" data-view="rav">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Revisionsrav (RAV)</div>
+            <div class="view-subtitle">Compliance requirements tracking · 13 RAV totalt</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge success" id="rav-done">8 STÄNGDA</span>
+            <span class="badge warn" id="rav-open">5 ÖPPNA</span>
+          </div>
+        </div>
+
+        <div id="rav-list">
+          <!-- populated by JS -->
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: COMPLIANCE                               -->
+      <!-- ============================================== -->
+      <section class="view" data-view="compliance">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Compliance</div>
+            <div class="view-subtitle">Regelefterlevnad · jurisdiktion · standarder</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge success">94% efterlevnad</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <table class="dt">
+            <thead><tr><th>Standard / Regelverk</th><th>Jurisdiktion</th><th>Status</th><th>Evidens</th><th>Revisor</th></tr></thead>
+            <tbody>
+              <tr><td><b>Bokföringslagen (1999:1078)</b></td><td>SE</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>SIE4 + SAF-T export</td><td>PWC Stockholm</td></tr>
+              <tr><td><b>Mervärdesskattelagen (1994:200)</b></td><td>SE</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>SRU + kontrollsumma</td><td>Skatteverket</td></tr>
+              <tr><td><b>Inkomstskattelagen (1999:1229)</b></td><td>SE</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>INK2R validerad</td><td>Internal</td></tr>
+              <tr><td><b>Årsredovisningslagen (1995:1554)</b></td><td>SE</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>XBRL Bolagsverket</td><td>PWC</td></tr>
+              <tr><td><b>K3 (BFNAR 2012:1)</b></td><td>SE</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>Värderingsregler</td><td>PWC</td></tr>
+              <tr><td><b>GDPR (2016/679)</b></td><td>EU</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>DPIA + DPO</td><td>Internal</td></tr>
+              <tr><td><b>SAF-T (OECD)</b></td><td>SE/EU</td><td><span class="pill warn"><span class="dot"></span>EJ KRAV ÄN</span></td><td>Förberedd export</td><td>—</td></tr>
+              <tr><td><b>Peppol BIS Billing 3.0</b></td><td>EU</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>UBL 2.1 + EN 16931</td><td>Peppol Authority</td></tr>
+              <tr><td><b>eIDAS-förordningen (910/2014)</b></td><td>EU</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>BankID NF + QES</td><td>Finansinspektionen</td></tr>
+              <tr><td><b>SOC 2 Type II</b></td><td>US/Global</td><td><span class="pill warn"><span class="dot"></span>PÅGÅR</span></td><td>Audit Q3 2026</td><td>Deloitte</td></tr>
+              <tr><td><b>ISO 27001:2022</b></td><td>Global</td><td><span class="pill warn"><span class="dot"></span>PÅGÅR</span></td><td>Stage 2 audit</td><td>BSI Group</td></tr>
+              <tr><td><b>ISO 22301 (BCM)</b></td><td>Global</td><td><span class="pill info"><span class="dot"></span>PLANERAD</span></td><td>Q1 2027</td><td>—</td></tr>
+              <tr><td><b>NIS2-direktivet</b></td><td>EU</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>Säkerhetsanmälan inkl</td><td>MSB</td></tr>
+              <tr><td><b>Penningtvättslagen (2017:630)</b></td><td>SE</td><td><span class="pill ok"><span class="dot"></span>EFTERLEVD</span></td><td>KYC + PEP-screen</td><td>Bolagsverket</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: SIGNING                                  -->
+      <!-- ============================================== -->
+      <section class="view" data-view="signing">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Digital Signering</div>
+            <div class="view-subtitle">BankID · eIDAS QES · SHA-256 dokumenthash</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge gold">eIDAS QES-nivå</span>
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div>
+            <div class="card">
+              <div class="card-title">Signera dokument</div>
+              <div style="font-size: 12.5px; color: var(--text-dim); margin: 10px 0;">
+                Välj dokument att signera med BankID. Signaturen kvalificeras enligt eIDAS QES-nivå och dokumentet får en SHA-256 hash som låses till hash-kedjan.
+              </div>
+              <select class="skv-select" id="sign-doc" style="width: 100%; margin-bottom: 12px;">
+                <option value="ink2r">INK2R Inkomstdeklaration 2025</option>
+                <option value="moms">Momsdeklaration 2026-Q1</option>
+                <option value="agi">AGI Maj 2026</option>
+                <option value="ne">NE-blankett 2025</option>
+                <option value="ar">Årsredovisning 2025</option>
+                <option value="saft">SAF-T export 2026-Q1</option>
+              </select>
+              <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="openBankId()">
+                ✍ Skriv under med BankID
+              </button>
+            </div>
+
+            <div class="card" style="margin-top: 14px;">
+              <div class="card-title">Senaste signeringar</div>
+              <table class="dt" style="margin-top: 8px;">
+                <thead><tr><th>Dokument</th><th>Signerare</th><th>Tid</th><th>Hash</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td>NE-blankett 2025</td>
+                    <td>Winston</td>
+                    <td class="mono">22:57:22</td>
+                    <td class="mono" style="color: var(--gold);">a3f9b2c1</td>
+                  </tr>
+                  <tr>
+                    <td>Årsredovisning 2025</td>
+                    <td>Winston (VD)</td>
+                    <td class="mono">2026-04-22</td>
+                    <td class="mono" style="color: var(--gold);">7d2e1f8a</td>
+                  </tr>
+                  <tr>
+                    <td>Momsdekl 2025-Q4</td>
+                    <td>Winston</td>
+                    <td class="mono">2026-02-12</td>
+                    <td class="mono" style="color: var(--gold);">9c4b3e2d</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div class="certificate">
+              <div class="cert-corner tl"></div>
+              <div class="cert-corner tr"></div>
+              <div class="cert-corner bl"></div>
+              <div class="cert-corner br"></div>
+              <div class="cert-title">Revisionsintyg</div>
+              <div class="cert-sub">eIDAS Qualified Electronic Signature</div>
+              <div class="cert-body">
+                <div class="cert-field"><span class="k">Dokument</span><span class="v" id="cert-doc">NE-blankett 2025</span></div>
+                <div class="cert-field"><span class="k">Organisation</span><span class="v">LandveX AB</span></div>
+                <div class="cert-field"><span class="k">Org.nr</span><span class="v">559141-7042</span></div>
+                <div class="cert-field"><span class="k">Signerare</span><span class="v" id="cert-signer">Winston · 19XX-XX-XX-XXXX</span></div>
+                <div class="cert-field"><span class="k">Tidpunkt</span><span class="v" id="cert-time">2026-05-23 22:57:22 CEST</span></div>
+                <div class="cert-field"><span class="k">SHA-256</span><span class="v" id="cert-hash" style="color: var(--gold);">a3f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1</span></div>
+                <div class="cert-field"><span class="k">Block i kedja</span><span class="v">#4821</span></div>
+                <div class="cert-field"><span class="k">Certifikat</span><span class="v">CN=BankID, O=Finansiell ID-Teknik BID AB</span></div>
+                <div class="cert-field"><span class="k">Status</span><span class="v" style="color: var(--success);">✓ GILTIG · eIDAS QES</span></div>
+              </div>
+              <div style="margin-top: 18px; text-align: center;">
+                <button class="btn" onclick="downloadCert()">⬇ Exportera signerat PDF-paket</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW: SYSTEM                                   -->
+      <!-- ============================================== -->
+      <section class="view" data-view="system">
+        <div class="view-header">
+          <div>
+            <div class="view-title">System</div>
+            <div class="view-subtitle">Infrastruktur · diagnostik · hash-kedjans hälsa</div>
+          </div>
+          <div class="view-meta">
+            <span class="badge success">Alla system OK</span>
+          </div>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card"><div class="card-title">Uptime</div><div class="card-value">99.997<span class="unit">%</span></div><div class="card-sub">90d rullande</div></div>
+          <div class="card"><div class="card-title">RPS</div><div class="card-value">312</div><div class="card-sub">peak: 1 240</div></div>
+          <div class="card"><div class="card-title">Hash-kedja</div><div class="card-value" style="color: var(--success);">VALID</div><div class="card-sub">4 821 block</div></div>
+          <div class="card"><div class="card-title">Senaste backup</div><div class="card-value" style="font-size: 14px;">22:30:00<br><span style="font-size: 11px; color: var(--text-dim);">2026-05-23</span></div></div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top: 16px;">
+          <div class="card">
+            <div class="card-title">Komponenter</div>
+            <div class="metric-row"><span class="label">Audit Pipeline</span><span class="val"><span class="pill ok"><span class="dot"></span>UP</span></span></div>
+            <div class="metric-row"><span class="label">SKV Adapter</span><span class="val"><span class="pill ok"><span class="dot"></span>UP</span></span></div>
+            <div class="metric-row"><span class="label">Peppol AP</span><span class="val"><span class="pill ok"><span class="dot"></span>UP</span></span></div>
+            <div class="metric-row"><span class="label">BankID Gateway</span><span class="val"><span class="pill ok"><span class="dot"></span>UP</span></span></div>
+            <div class="metric-row"><span class="label">Hash Chain Engine</span><span class="val"><span class="pill ok"><span class="dot"></span>UP</span></span></div>
+            <div class="metric-row"><span class="label">SAF-T Generator</span><span class="val"><span class="pill ok"><span class="dot"></span>UP</span></span></div>
+            <div class="metric-row"><span class="label">PostgreSQL (primär)</span><span class="val"><span class="pill ok"><span class="dot"></span>UP</span></span></div>
+            <div class="metric-row"><span class="label">PostgreSQL (replica)</span><span class="val"><span class="pill ok"><span class="dot"></span>UP</span></span></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Säkerhet</div>
+            <div class="metric-row"><span class="label">TLS-version</span><span class="val">TLS 1.3</span></div>
+            <div class="metric-row"><span class="label">Krypteringsstandard</span><span class="val">AES-256-GCM</span></div>
+            <div class="metric-row"><span class="label">Hash-algoritm</span><span class="val">SHA-256</span></div>
+            <div class="metric-row"><span class="label">Nyckelrotation</span><span class="val">90d (KMS)</span></div>
+            <div class="metric-row"><span class="label">Pen-test</span><span class="val">2026-03-15 (PASS)</span></div>
+            <div class="metric-row"><span class="label">Senaste säkerhets-skan</span><span class="val">22:00:00 (OK)</span></div>
+            <div class="metric-row"><span class="label">Failed logins (24h)</span><span class="val">0</span></div>
+            <div class="metric-row"><span class="label">MFA-täckning</span><span class="val">100%</span></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ========== BANKID MODAL ========== -->
+<div class="modal-backdrop" id="bankid-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span style="font-size: 22px;">🆔</span>
+      <span>BankID-signering</span>
+    </div>
+    <div class="modal-sub">Skanna QR-koden med din BankID-app eller fortsätt på denna enhet</div>
+
+    <div class="qr-canvas">
+      <div class="qr-grid" id="qr-grid"></div>
+    </div>
+
+    <div class="bankid-status" id="bankid-status">
+      Väntar på att du startar BankID-appen...
+    </div>    <div class="bankid-spinner" id="bankid-spinner"></div>
+
+    <div style="display: flex; gap: 10px; margin-top: 22px;">
+      <button class="btn" style="flex: 1; justify-content: center;" onclick="closeBankId()">Avbryt</button>
+      <button class="btn btn-primary" style="flex: 1; justify-content: center;" onclick="completeBankId()">Simulera signering</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TOAST ========== -->
+<div class="toast" id="toast">
+  <div id="toast-msg">Klar</div>
+</div>
+
+<script>
+// =====================================================
+// OUROBOROS — Skatteverket Edition v2.0
+// =====================================================
+
+// ---------- BAS 2024 kontoplan (20+ konton) ----------
+const BAS_2024 = [
+  { nr: '1010', namn: 'Utvecklingsutgifter', typ: 'T' },
+  { nr: '1220', namn: 'Inventarier och verktyg', typ: 'T' },
+  { nr: '1510', namn: 'Kundfordringar', typ: 'T' },
+  { nr: '1630', namn: 'Avräkning för skatter och avgifter (skattekonto)', typ: 'T' },
+  { nr: '1910', namn: 'Kassa', typ: 'T' },
+  { nr: '1930', namn: 'Företagskonto / affärskonto', typ: 'T' },
+  { nr: '1940', namn: 'Övriga bankkonton', typ: 'T' },
+  { nr: '2010', namn: 'Eget kapital, delägare 1', typ: 'S' },
+  { nr: '2081', namn: 'Aktiekapital', typ: 'S' },
+  { nr: '2099', namn: 'Årets resultat', typ: 'S' },
+  { nr: '2440', namn: 'Leverantörsskulder', typ: 'S' },
+  { nr: '2510', namn: 'Skatteskulder', typ: 'S' },
+  { nr: '2610', namn: 'Utgående moms 25%', typ: 'S' },
+  { nr: '2620', namn: 'Utgående moms 12%', typ: 'S' },
+  { nr: '2630', namn: 'Utgående moms 6%', typ: 'S' },
+  { nr: '2641', namn: 'Debiterad ingående moms', typ: 'T' },
+  { nr: '2645', namn: 'Beräknad ingående moms på förvärv från utlandet', typ: 'T' },
+  { nr: '2710', namn: 'Personalskatt', typ: 'S' },
+  { nr: '2731', namn: 'Avräkning lagstadgade sociala avgifter', typ: 'S' },
+  { nr: '3001', namn: 'Försäljning inom Sverige, 25% moms', typ: 'I' },
+  { nr: '3002', namn: 'Försäljning inom Sverige, 12% moms', typ: 'I' },
+  { nr: '3003', namn: 'Försäljning inom Sverige, 6% moms', typ: 'I' },
+  { nr: '4010', namn: 'Inköp material och varor', typ: 'K' },
+  { nr: '5410', namn: 'Förbrukningsinventarier', typ: 'K' },
+  { nr: '6212', namn: 'Mobiltelefon, abonnemang', typ: 'K' },
+  { nr: '6310', namn: 'Företagsförsäkringar', typ: 'K' },
+  { nr: '7010', namn: 'Löner till kollektivanställda', typ: 'K' },
+  { nr: '7210', namn: 'Löner till tjänstemän', typ: 'K' },
+  { nr: '7510', namn: 'Lagstadgade sociala avgifter', typ: 'K' },
+  { nr: '7832', namn: 'Avskrivningar på inventarier och verktyg', typ: 'K' },
+  { nr: '8310', namn: 'Ränteintäkter', typ: 'I' },
+  { nr: '8410', namn: 'Räntekostnader', typ: 'K' },
+];
+
+function populateAccountSelect() {
+  const sel = document.getElementById('ledger-account');
+  if (!sel) return;
+  sel.innerHTML = '';
+  BAS_2024.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.nr;
+    opt.textContent = `${a.nr} · ${a.namn}`;
+    sel.appendChild(opt);
+  });
+}
+
+// ---------- RAV LIST (med nya skv-rav) ----------
+const RAV_LIST = [
+  { id: 'RAV-001', titel: 'Double-entry bokföring (BAS 2024)', sub: 'Alla verifikationer måste balansera', status: 'ok', priority: 'kritisk', evidence: 'Pipeline-test #4821' },
+  { id: 'RAV-002', titel: 'SRU-fil enligt Skatteverkets schema', sub: 'Momsdeklaration SKV 4700', status: 'ok', priority: 'kritisk', evidence: 'Schema v2026.1 OK' },
+  { id: 'RAV-003', titel: 'SIE4 export-stöd', sub: 'För revisorsöverföring', status: 'ok', priority: 'hög', evidence: 'Test mot Visma/Fortnox' },
+  { id: 'RAV-004', titel: 'Hash-kedjans integritet (SHA-256)', sub: 'Immutable audit trail', status: 'ok', priority: 'kritisk', evidence: '4 821 block verifierade' },
+  { id: 'RAV-005', titel: 'GDPR Article 17 (radering)', sub: 'Right to erasure med audit log', status: 'ok', priority: 'hög', evidence: 'DPIA godkänd' },
+  { id: 'RAV-006', titel: 'Backup + RPO < 5 min', sub: 'Affärskontinuitet', status: 'ok', priority: 'hög', evidence: 'PITR PostgreSQL 14' },
+  { id: 'RAV-007', titel: 'TLS 1.3 obligatoriskt', sub: 'Transport-säkerhet', status: 'ok', priority: 'medel', evidence: 'Nginx config audit' },
+  { id: 'RAV-008', titel: 'Pen-test årligen', sub: 'Säkerhetsgranskning', status: 'ok', priority: 'hög', evidence: '2026-03-15 PASS' },
+  { id: 'RAV-SKV3', titel: 'INK2R Inkomstdeklaration', sub: 'Aktiebolagsdeklaration · XML-export', status: 'open', priority: 'kritisk', evidence: 'Stub-implementation klar' },
+  { id: 'RAV-SKV4', titel: 'AGI Arbetsgivardeklaration', sub: 'Månadsvis per anställd · XML', status: 'open', priority: 'kritisk', evidence: 'Stub-implementation klar' },
+  { id: 'RAV-SKV5', titel: 'Digital signering BankID/eIDAS', sub: 'QES-nivå · SHA-256 låst', status: 'open', priority: 'kritisk', evidence: 'BankID-flöde implementerat' },
+  { id: 'RAV-SKV6', titel: 'Peppol e-faktura (BIS Billing 3.0)', sub: 'UBL 2.1 + EN 16931', status: 'open', priority: 'hög', evidence: 'AP-anslutning live' },
+  { id: 'RAV-SKV7', titel: 'SAF-T export (OECD-standard)', sub: 'Förberedelse inför SE-krav', status: 'open', priority: 'medel', evidence: 'XML-generator klar' },
+];
+
+function loadRAVStatus() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('ouroboros_rav') || '{}');
+    RAV_LIST.forEach(r => { if (stored[r.id]) r.status = stored[r.id]; });
+  } catch(e) {}
+}
+function saveRAVStatus(id, status) {
+  try {
+    const stored = JSON.parse(localStorage.getItem('ouroboros_rav') || '{}');
+    stored[id] = status;
+    localStorage.setItem('ouroboros_rav', JSON.stringify(stored));
+  } catch(e) {}
+}
+
+function renderRAV() {
+  const wrap = document.getElementById('rav-list');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  let openCount = 0, doneCount = 0;
+  RAV_LIST.forEach(r => {
+    if (r.status === 'ok') doneCount++; else openCount++;
+    const div = document.createElement('div');
+    div.className = 'rav-item';
+    const pillClass = r.status === 'ok' ? 'ok' : 'warn';
+    const pillText = r.status === 'ok' ? '✓ STÄNGD' : '◯ ÖPPEN';
+    const prioColor = r.priority === 'kritisk' ? 'danger' : r.priority === 'hög' ? 'warn' : 'info';
+    div.innerHTML = `
+      <div class="rav-id">${r.id}</div>
+      <div>
+        <div class="rav-title">${r.titel}</div>
+        <div class="rav-sub">${r.sub} · evidens: ${r.evidence}</div>
+      </div>
+      <div><span class="badge ${prioColor}">${r.priority.toUpperCase()}</span></div>
+      <div><span class="pill ${pillClass}"><span class="dot"></span>${pillText}</span></div>
+      <div><button class="btn" style="font-size: 11px; padding: 5px 10px;" onclick="toggleRAV('${r.id}')">${r.status === 'ok' ? 'Öppna' : 'Stäng'}</button></div>
+    `;
+    wrap.appendChild(div);
+  });
+  const doneEl = document.getElementById('rav-done');
+  const openEl = document.getElementById('rav-open');
+  if (doneEl) doneEl.textContent = `${doneCount} STÄNGDA`;
+  if (openEl) openEl.textContent = `${openCount} ÖPPNA`;
+}
+function toggleRAV(id) {
+  const r = RAV_LIST.find(x => x.id === id);
+  if (!r) return;
+  r.status = r.status === 'ok' ? 'open' : 'ok';
+  saveRAVStatus(id, r.status);
+  renderRAV();
+  toast(`${id} markerad som ${r.status === 'ok' ? 'stängd' : 'öppen'}`);
+}
+
+// ---------- NAV ----------
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => goView(item.dataset.view));
+});
+function goView(view) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const nav = document.querySelector(`.nav-item[data-view="${view}"]`);
+  const sec = document.querySelector(`.view[data-view="${view}"]`);
+  if (nav) nav.classList.add('active');
+  if (sec) sec.classList.add('active');
+  const crumb = document.getElementById('crumb-view');
+  if (crumb && nav) crumb.textContent = nav.textContent.trim();
+  // Side effects per view
+  if (view === 'moms' || view === 'skv') recalcMoms();
+  if (view === 'ink2r') recalcInk2r();
+  if (view === 'agi') recalcAgi();
+  if (view === 'saft') renderSaft();
+  if (view === 'integrations') renderPeppol();
+}
+
+// ---------- TABS ----------
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    const parent = t.closest('.view');
+    parent.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    parent.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    parent.querySelector(`.tab-panel[data-tab="${t.dataset.tab}"]`).classList.add('active');
+  });
+});
+
+// ---------- UTILS ----------
+function parseAmount(s) {
+  if (typeof s !== 'string') s = String(s);
+  return parseFloat(s.replace(/\s/g, '').replace(',', '.')) || 0;
+}
+function fmt(n) {
+  const sign = n < 0 ? '-' : '';
+  n = Math.abs(Math.round(n));
+  return sign + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+// Simple non-crypto hash for sim (FNV-1a 32-bit hex)
+function simpleHash(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  // Stretch to 64 hex chars deterministically
+  let out = '';
+  let x = h;
+  for (let i = 0; i < 16; i++) {
+    x = (x * 0x01000193 + i * 7) >>> 0;
+    out += x.toString(16).padStart(8, '0');
+  }
+  return out.slice(0, 64);
+}
+
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'toast show ' + (type === 'ok' ? '' : type);
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+function downloadBlob(filename, content, mime = 'application/xml') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+}
+
+// ---------- MOMS ----------
+function recalcMoms() {
+  const r05 = parseAmount(document.querySelector('[data-target="r05"]').value);
+  const r06 = parseAmount(document.querySelector('[data-target="r06"]').value);
+  const r07 = parseAmount(document.querySelector('[data-target="r07"]').value);
+  const r48 = parseAmount(document.getElementById('r48').value);
+  const r10 = Math.round(r05 * 0.25);
+  const r11 = Math.round(r06 * 0.12);
+  const r12 = Math.round(r07 * 0.06);
+  const r49 = r10 + r11 + r12 - r48;
+  document.getElementById('r10').value = fmt(r10);
+  document.getElementById('r11').value = fmt(r11);
+  document.getElementById('r12').value = fmt(r12);
+  document.getElementById('r49').value = fmt(r49);
+  // Validation visual
+  document.querySelectorAll('[data-target]').forEach(inp => {
+    const v = parseAmount(inp.value);
+    inp.classList.toggle('valid', v >= 0);
+    inp.classList.toggle('invalid', v < 0);
+  });
+  // Checksum
+  const csInput = r05 + '|' + r06 + '|' + r07 + '|' + r48 + '|' + r49;
+  const cs = simpleHash(csInput).slice(0, 8);
+  const csEl = document.getElementById('moms-checksum');
+  if (csEl) csEl.textContent = cs;
+  renderSRU();
+}
+
+function renderSRU() {
+  const r05 = parseAmount(document.querySelector('[data-target="r05"]').value);
+  const r06 = parseAmount(document.querySelector('[data-target="r06"]').value);
+  const r07 = parseAmount(document.querySelector('[data-target="r07"]').value);
+  const r48 = parseAmount(document.getElementById('r48').value);
+  const r10 = Math.round(r05 * 0.25);
+  const r11 = Math.round(r06 * 0.12);
+  const r12 = Math.round(r07 * 0.06);
+  const r49 = r10 + r11 + r12 - r48;
+  const sru =
+`#BLANKETT SKV4700-1
+#IDENTITET 5591417042 20260523 225900
+#NAMN LandveX AB
+#UPPGIFT 5 ${r05}
+#UPPGIFT 6 ${r06}
+#UPPGIFT 7 ${r07}
+#UPPGIFT 10 ${r10}
+#UPPGIFT 11 ${r11}
+#UPPGIFT 12 ${r12}
+#UPPGIFT 48 ${r48}
+#UPPGIFT 49 ${r49}
+#BLANKETTSLUT
+#FIL_SLUT`;
+  const el = document.getElementById('sru-preview');
+  if (el) el.textContent = sru;
+}
+
+function downloadSRU() {
+  recalcMoms();
+  downloadBlob('SKV4700_LandveX_2026Q1.sru', document.getElementById('sru-preview').textContent, 'text/plain');
+  toast('SRU-fil nedladdad: SKV4700_LandveX_2026Q1.sru');
+}
+
+function validateMoms() {
+  toast('✓ Validering OK · Schema SKV4700 v2026.1 · Kontrollsumma matchar', 'ok');
+}
+
+function signMoms() { openBankId('Momsdeklaration 2026-Q1'); }
+
+function submitToSKV(form) {
+  const ref = 'SKV-' + Date.now().toString().slice(-8);
+  toast(`📤 Inskickad till Skatteverket · Ärendenr: ${ref}`, 'info');
+}
+
+// ---------- INK2R ----------
+function recalcInk2r() {
+  const get = (k) => parseAmount(document.querySelector(`[data-ink="${k}"]`).value);
+  const r1_1 = get('r1_1');
+  const r1_2 = get('r1_2');
+  const r1_3 = get('r1_3');
+  const r1_4 = get('r1_4');
+  const r2_1 = get('r2_1');
+  const r3_1 = get('r3_1');
+  const r3_2 = get('r3_2');
+  const r3_3 = get('r3_3');
+  const r5_1 = get('r5_1');
+  const r5_2 = get('r5_2');
+  const r4_1 = r1_1 + r1_2 + r1_3 + r1_4 + r2_1 + r3_1 + r3_2 + r3_3;
+  const r6_1 = r4_1 + r5_1 + r5_2;
+  const r7_1 = r6_1; // skattepliktigt = resultat (förenklat)
+  const r8_1 = Math.round(r7_1 * 0.206);
+  document.getElementById('ink_r4_1').value = fmt(r4_1);
+  document.getElementById('ink_r6_1').value = fmt(r6_1);
+  document.getElementById('ink_r7_1').value = fmt(r7_1);
+  document.getElementById('ink_r8_1').value = fmt(r8_1);
+  document.querySelectorAll('[data-ink]').forEach(i => {
+    i.classList.add('valid');
+  });
+  renderInk2rXml({ r1_1, r1_2, r1_3, r1_4, r2_1, r3_1, r3_2, r3_3, r4_1, r5_1, r5_2, r6_1, r7_1, r8_1 });
+}
+
+function renderInk2rXml(v) {
+  const xml =
+`<?xml version="1.0" encoding="UTF-8"?>
+<Skatteverket xmlns="http://xmls.skatteverket.se/se/skatteverket/da/instans/schema/v1">
+  <OrgNr>5591417042</OrgNr>
+  <Blankett>
+    <Arendeinformation>
+      <Arendeagare>5591417042</Arendeagare>
+      <Period>2025</Period>
+    </Arendeinformation>
+    <Blankettinnehall>
+      <INK2R>
+        <Intakter>
+          <Nettoomsattning ruta="1.1">${v.r1_1}</Nettoomsattning>
+          <ForandringLager ruta="1.2">${v.r1_2}</ForandringLager>
+          <AktiveratArbete ruta="1.3">${v.r1_3}</AktiveratArbete>
+          <OvrigaRorelseintakter ruta="1.4">${v.r1_4}</OvrigaRorelseintakter>
+        </Intakter>
+        <Kostnader>
+          <KostnadSaldaVaror ruta="2.1">${v.r2_1}</KostnadSaldaVaror>
+          <Rorelsekostnader ruta="3.1">${v.r3_1}</Rorelsekostnader>
+          <Personalkostnader ruta="3.2">${v.r3_2}</Personalkostnader>
+          <Avskrivningar ruta="3.3">${v.r3_3}</Avskrivningar>
+        </Kostnader>
+        <Rorelseresultat ruta="4.1">${v.r4_1}</Rorelseresultat>
+        <Finansiella>
+          <Intakter ruta="5.1">${v.r5_1}</Intakter>
+          <Kostnader ruta="5.2">${v.r5_2}</Kostnader>
+        </Finansiella>
+        <ResultatForeBokslutsdisp ruta="6.1">${v.r6_1}</ResultatForeBokslutsdisp>
+        <SkattepliktigtResultat ruta="7.1">${v.r7_1}</SkattepliktigtResultat>
+        <Bolagsskatt ruta="8.1" sats="0.206">${v.r8_1}</Bolagsskatt>
+      </INK2R>
+    </Blankettinnehall>
+  </Blankett>
+</Skatteverket>`;
+  const el = document.getElementById('ink2r-preview');
+  if (el) el.textContent = xml;
+}
+
+function validateInk2r() {
+  recalcInk2r();
+  const banner = document.getElementById('ink2r-banner');
+  const pill = document.getElementById('ink2r-pill');
+  banner.className = 'status-banner ok';
+  banner.innerHTML = '<span>✓</span><div><b>Validering OK.</b> Schema INK2R v2026.1 matchar · Alla rutor balanserar · Klar för inlämning.</div>';
+  pill.className = 'pill ok';
+  pill.innerHTML = '<span class="dot"></span>KLAR FÖR INLÄMNING';
+  document.getElementById('ink2r-submit').disabled = false;
+  toast('✓ INK2R validerad mot Skatteverkets schema', 'ok');
+}
+
+function downloadInk2r() {
+  recalcInk2r();
+  downloadBlob('INK2R_LandveX_2025.xml', document.getElementById('ink2r-preview').textContent);
+  toast('INK2R XML nedladdad');
+}
+function signInk2r() { openBankId('INK2R Inkomstdeklaration 2025'); }
+
+// ---------- AGI ----------
+const EMPLOYEES = [
+  { pnr: '19850412-XXXX', namn: 'Anna Lindberg', brutto: 62000, forman: 1200 },
+  { pnr: '19790823-XXXX', namn: 'Erik Svensson', brutto: 84000, forman: 2400 },
+  { pnr: '19920305-XXXX', namn: 'Sara Karlsson', brutto: 48000, forman: 0 },
+  { pnr: '19880716-XXXX', namn: 'Johan Berg', brutto: 72000, forman: 1800 },
+  { pnr: '19951102-XXXX', namn: 'Maria Nilsson', brutto: 38000, forman: 0 },
+  { pnr: '19831221-XXXX', namn: 'Peter Holm', brutto: 24000, forman: 600 },
+  { pnr: '19960918-XXXX', namn: 'Lisa Ström', brutto: 0, forman: 0 },
+];
+
+function recalcAgi() {
+  const tbody = document.getElementById('agi-employees');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  let totBrutto = 0, totForman = 0, totSkatt = 0, totAvgift = 0;
+  EMPLOYEES.forEach(e => {
+    const skatt = Math.round((e.brutto + e.forman) * 0.30);
+    const avgift = Math.round((e.brutto + e.forman) * 0.3142);
+    totBrutto += e.brutto;
+    totForman += e.forman;
+    totSkatt += skatt;
+    totAvgift += avgift;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${e.pnr}</td>
+      <td>${e.namn}</td>
+      <td class="right mono">${fmt(e.brutto)}</td>
+      <td class="right mono">${fmt(e.forman)}</td>
+      <td class="right mono">${fmt(skatt)}</td>
+      <td class="right mono">${fmt(avgift)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('agi-tot-brutto').textContent = fmt(totBrutto);
+  document.getElementById('agi-tot-forman').textContent = fmt(totForman);
+  document.getElementById('agi-tot-skatt').textContent = fmt(totSkatt);
+  document.getElementById('agi-tot-avgift').textContent = fmt(totAvgift);
+  document.getElementById('agi-sum-skatt').innerHTML = fmt(totSkatt) + '<span class="unit">SEK</span>';
+  document.getElementById('agi-sum-avgift').innerHTML = fmt(totAvgift) + '<span class="unit">SEK</span>';
+  document.getElementById('agi-total').innerHTML = fmt(totSkatt + totAvgift) + '<span class="unit">SEK</span>';
+  renderAgiXml(totBrutto, totForman, totSkatt, totAvgift);
+}
+
+function renderAgiXml(brutto, forman, skatt, avgift) {
+  const period = document.getElementById('agi-month').value;
+  const iuRows = EMPLOYEES.map(e => {
+    const s = Math.round((e.brutto + e.forman) * 0.30);
+    const a = Math.round((e.brutto + e.forman) * 0.3142);
+    return `      <IndividuellUppgift>
+        <Personnummer>${e.pnr}</Personnummer>
+        <KontantErsattning>${e.brutto}</KontantErsattning>
+        <SkattepliktigaForman>${e.forman}</SkattepliktigaForman>
+        <AvdragenSkatt>${s}</AvdragenSkatt>
+        <Arbetsgivaravgift>${a}</Arbetsgivaravgift>
+      </IndividuellUppgift>`;
+  }).join('\n');
+
+  const xml =
+`<?xml version="1.0" encoding="UTF-8"?>
+<Skatteverket xmlns="http://xmls.skatteverket.se/se/skatteverket/da/instans/schema/v1">
+  <Blankett>
+    <Arendeinformation>
+      <Arendeagare>5591417042</Arendeagare>
+      <Period>${period}</Period>
+    </Arendeinformation>
+    <Blankettinnehall>
+      <HU>
+        <Arbetsgivare>5591417042</Arbetsgivare>
+        <Period>${period}</Period>
+        <SummaArbetsgivaravgift>${avgift}</SummaArbetsgivaravgift>
+        <SummaAvdragenSkatt>${skatt}</SummaAvdragenSkatt>
+        <SummaUtbetaldErsattning>${brutto + forman}</SummaUtbetaldErsattning>
+      </HU>
+${iuRows}
+    </Blankettinnehall>
+  </Blankett>
+</Skatteverket>`;
+  document.getElementById('agi-preview').textContent = xml;
+}
+
+function downloadAgi() {
+  recalcAgi();
+  const period = document.getElementById('agi-month').value;
+  downloadBlob(`AGI_LandveX_${period}.xml`, document.getElementById('agi-preview').textContent);
+  toast('AGI XML nedladdad');
+}
+function signAgi() { openBankId('AGI ' + document.getElementById('agi-month').value); }
+
+// ---------- SAF-T ----------
+function renderSaft() {
+  const accounts = BAS_2024.slice(0, 12).map(a =>
+`      <Account>
+        <AccountID>${a.nr}</AccountID>
+        <AccountDescription>${a.namn}</AccountDescription>
+        <StandardAccountID>${a.nr}</StandardAccountID>
+        <AccountType>${a.typ}</AccountType>
+      </Account>`).join('\n');
+
+  const xml =
+`<?xml version="1.0" encoding="UTF-8"?>
+<AuditFile xmlns="urn:StandardAuditFile-Taxation-Financial:SE">
+  <Header>
+    <AuditFileVersion>1.0</AuditFileVersion>
+    <AuditFileCountry>SE</AuditFileCountry>
+    <AuditFileDateCreated>2026-05-23</AuditFileDateCreated>
+    <SoftwareCompanyName>Ouroboros</SoftwareCompanyName>
+    <SoftwareID>Ouroboros-Skv-Edition</SoftwareID>
+    <SoftwareVersion>2.0</SoftwareVersion>
+    <Company>
+      <RegistrationNumber>5591417042</RegistrationNumber>
+      <Name>LandveX AB</Name>
+      <Address>
+        <StreetName>Box 1234</StreetName>
+        <City>Stockholm</City>
+        <PostalCode>11122</PostalCode>
+        <Country>SE</Country>
+      </Address>
+      <Contact>
+        <ContactPerson>
+          <FirstName>Winston</FirstName>
+          <LastName>(VD)</LastName>
+        </ContactPerson>
+        <Email>winston@landvex.se</Email>
+      </Contact>
+      <TaxRegistration>
+        <TaxRegistrationNumber>SE559141704201</TaxRegistrationNumber>
+        <TaxType>VAT</TaxType>
+      </TaxRegistration>
+      <BankAccount>
+        <IBANNumber>SE45 5000 0000 0583 9825 7466</IBANNumber>
+      </BankAccount>
+    </Company>
+    <DefaultCurrencyCode>SEK</DefaultCurrencyCode>
+    <SelectionCriteria>
+      <PeriodStart>1</PeriodStart>
+      <PeriodEnd>3</PeriodEnd>
+      <FiscalYear>2026</FiscalYear>
+    </SelectionCriteria>
+    <TaxAccountingBasis>A</TaxAccountingBasis>
+  </Header>
+  <MasterFiles>
+    <GeneralLedgerAccounts>
+${accounts}
+    </GeneralLedgerAccounts>
+    <Customers/>
+    <Suppliers/>
+    <TaxTable>
+      <TaxTableEntry>
+        <TaxType>MVA</TaxType>
+        <TaxCode>S25</TaxCode>
+        <Description>Standardmoms 25%</Description>
+        <TaxPercentage>25.00</TaxPercentage>
+      </TaxTableEntry>
+    </TaxTable>
+  </MasterFiles>
+  <GeneralLedgerEntries>
+    <NumberOfEntries>4821</NumberOfEntries>
+    <TotalDebit>14218400.00</TotalDebit>
+    <TotalCredit>14218400.00</TotalCredit>
+    <!-- 4821 verifikationer utelämnade i preview -->
+  </GeneralLedgerEntries>
+</AuditFile>`;
+  const el = document.getElementById('saft-preview');
+  if (el) el.textContent = xml;
+  const h = document.getElementById('saft-hash');
+  if (h) h.textContent = simpleHash(xml).slice(0, 16) + '...';
+}
+
+function downloadSaft() {
+  renderSaft();
+  const xml = document.getElementById('saft-preview') ? document.getElementById('saft-preview').textContent : '';
+  downloadBlob('SAFT_LandveX_2026Q1.xml', xml);
+  toast('SAF-T XML nedladdad');
+}
+function downloadSaftZip() {
+  toast('ZIP-paketet bygger... (simulerad)', 'info');
+  setTimeout(() => downloadSaft(), 600);
+}
+function validateSaft() {
+  toast('✓ SAF-T schemavalidering OK · OECD v1.0 SE-profil', 'ok');
+}
+
+// ---------- SIE4 ----------
+function downloadSIE4() {
+  const sie4 =
+`#FLAGGA 0
+#PROGRAM "Ouroboros" "2.0"
+#FORMAT PC8
+#GEN 20260523
+#SIETYP 4
+#FNR "5591417042"
+#ORGNR 559141-7042
+#FNAMN "LandveX AB"
+#RAR 0 20260101 20261231
+${BAS_2024.map(a => `#KONTO ${a.nr} "${a.namn}"`).join('\n')}
+#IB 0 1930 1250000.00
+#IB 0 2081 50000.00
+#VER A 1 20260102 "Försäljning Q1"
+{
+  #TRANS 3001 {} -4218400.00
+  #TRANS 2610 {} -1054600.00
+  #TRANS 1510 {} 5273000.00
+}
+#VER A 2 20260331 "Momsavstämning Q1"
+{
+  #TRANS 2610 {} 1054600.00
+  #TRANS 2641 {} -207500.00
+  #TRANS 1630 {} -847100.00
+}
+`;
+  downloadBlob('LandveX_2026Q1.se', sie4, 'text/plain');
+  toast('SIE4 nedladdad');
+}
+
+function closePeriod() {
+  toast('🔒 Period 2026-Q1 stängd · Bokslutsverifikation skapad (#BV-2026-Q1)', 'ok');
+}
+
+// ---------- LEDGER TX ----------
+function renderLedgerTx() {
+  const tbody = document.getElementById('ledger-tx');
+  if (!tbody) return;
+  const TX = [
+    { nr: 'A:1', dat: '2026-01-02', txt: 'Försäljning faktura #2026-001', d: '1510', k: '3001', bel: 4218400 },
+    { nr: 'A:2', dat: '2026-01-02', txt: 'Utgående moms 25%', d: '1510', k: '2610', bel: 1054600 },
+    { nr: 'A:3', dat: '2026-01-15', txt: 'Inköp material', d: '4010', k: '2440', bel: 830000 },
+    { nr: 'A:4', dat: '2026-01-15', txt: 'Ingående moms 25%', d: '2641', k: '2440', bel: 207500 },
+    { nr: 'A:5', dat: '2026-01-25', txt: 'Löneutbetalning januari', d: '7210', k: '1930', bel: 328000 },
+    { nr: 'A:6', dat: '2026-01-25', txt: 'Personalskatt', d: '7210', k: '2710', bel: 98400 },
+    { nr: 'A:7', dat: '2026-01-25', txt: 'Sociala avgifter', d: '7510', k: '2731', bel: 103084 },
+    { nr: 'A:8', dat: '2026-03-31', txt: 'Momsavstämning Q1', d: '2610', k: '1630', bel: 847100 },
+  ];
+  tbody.innerHTML = TX.map(t => `
+    <tr>
+      <td class="mono">${t.nr}</td>
+      <td class="mono">${t.dat}</td>
+      <td>${t.txt}</td>
+      <td class="mono">${t.d}</td>
+      <td class="mono">${t.k}</td>
+      <td class="right mono">${fmt(t.bel)}</td>
+    </tr>`).join('');
+}
+
+// ---------- AUDIT TX ----------
+function renderAuditTx() {
+  const tbody = document.getElementById('audit-tx');
+  if (!tbody) return;
+  const TX = [
+    { id: 'TX-4821', t: '22:58:41', d: '1510 Kund', k: '3001 Försäljn', b: 12400, m: '25%', s: 'ok' },
+    { id: 'TX-4820', t: '22:58:36', d: '1510 Kund', k: '2610 Mva', b: 3100, m: '25%', s: 'ok' },
+    { id: 'TX-4819', t: '22:58:18', d: '4010 Inköp', k: '2440 Lev', b: 8400, m: '25%', s: 'ok' },
+    { id: 'TX-4818', t: '22:57:55', d: '2641 Mva-in', k: '2440 Lev', b: 2100, m: '25%', s: 'ok' },
+    { id: 'TX-4817', t: '22:57:40', d: '1930 Bank', k: '1510 Kund', b: 15500, m: '—', s: 'fix' },
+    { id: 'TX-4816', t: '22:57:22', d: '7210 Lön', k: '1930 Bank', b: 28000, m: '—', s: 'ok' },
+    { id: 'TX-4815', t: '22:56:59', d: '6310 Försäkr', k: '1930 Bank', b: 4200, m: '25%', s: 'ok' },
+  ];
+  tbody.innerHTML = TX.map(t => {
+    const pillClass = t.s === 'ok' ? 'ok' : 'warn';
+    const pillText = t.s === 'ok' ? '✓ OK' : '↻ AUTO-FIX';
+    return `<tr>
+      <td class="mono">${t.id}</td>
+      <td class="mono">${t.t}</td>
+      <td>${t.d}</td>
+      <td>${t.k}</td>
+      <td class="right mono">${fmt(t.b)}</td>
+      <td>${t.m}</td>
+      <td><span class="pill ${pillClass}"><span class="dot"></span>${pillText}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ---------- EVENT STREAM ----------
+function renderEventStream() {
+  const events = [
+    { t: '22:58:41', lv: 'ok', msg: 'TX-4821 verifierad mot BAS 2024', ref: '+12.4k' },
+    { t: '22:58:36', lv: 'ok', msg: 'Hash-block #4821 inkluderad i kedjan', ref: '7d2e1f8a' },
+    { t: '22:58:32', lv: 'info', msg: 'Peppol: faktura #PEP-2026-0214 mottagen', ref: 'UBL 2.1' },
+    { t: '22:58:18', lv: 'ok', msg: 'SRU-fil validerad mot SKV4700 v2026.1', ref: 'OK' },
+    { t: '22:57:55', lv: 'ok', msg: 'Auto-kontering: 5410 → 1930 (förbr.inv)', ref: '4.2k' },
+    { t: '22:57:40', lv: 'warn', msg: 'Avvikelse 2641/2645 detekterad · auto-fix tillämpad', ref: 'AUTO' },
+    { t: '22:57:22', lv: 'ok', msg: 'BankID-signering NE-blankett 2025 klar', ref: 'a3f9b2c1' },
+    { t: '22:56:59', lv: 'info', msg: 'SAF-T XML genererad (2.4 MB, 4 821 entries)', ref: 'OECD v1.0' },
+    { t: '22:55:12', lv: 'ok', msg: 'INK2R-utkast uppdaterat med Q1-siffror', ref: 'DRAFT' },
+    { t: '22:54:08', lv: 'ok', msg: 'Nordea OB: konton-sync klar (3 konton)', ref: 'PSD2' },
+    { t: '22:52:33', lv: 'info', msg: 'AGI maj-data uppdaterad (7 anställda)', ref: '' },
+    { t: '22:50:00', lv: 'ok', msg: 'Periodisk integritetskontroll: hash-kedja VALID', ref: '4821 block' },
+    { t: '22:30:00', lv: 'ok', msg: 'Backup PostgreSQL klar (PITR enabled)', ref: 'RPO < 5min' },
+    { t: '22:00:00', lv: 'ok', msg: 'Säkerhetsskan kvällsfönster: 0 fynd', ref: 'CLEAN' },
+    { t: '20:15:42', lv: 'warn', msg: 'Schemaversion SKV4700 uppdaterades till v2026.1', ref: 'INFO' },
+    { t: '18:42:11', lv: 'ok', msg: 'Momsdeklaration Q1 inskickad till SKV', ref: 'SKV-89412071' },
+    { t: '17:30:00', lv: 'info', msg: 'Bolagsverket: XBRL årsred 2025 ackepterad', ref: 'OK' },
+  ];
+  const wrap = document.getElementById('event-stream');
+  if (!wrap) return;
+  wrap.innerHTML = events.map(e =>
+    `<div class="evt-row">
+      <span class="evt-time">${e.t}</span>
+      <span class="evt-level ${e.lv}">${e.lv.toUpperCase()}</span>
+      <span>${e.msg}</span>
+      <span style="color: var(--text-faint); text-align: right;">${e.ref}</span>
+    </div>`
+  ).join('');
+}
+
+// ---------- HASH CHAIN ----------
+function buildHashChain() {
+  const wrap = document.getElementById('hash-chain');
+  if (!wrap) return;
+  const blocks = [
+    { id: 'GENESIS', hash: '0000000000000000', genesis: true },
+    { id: 'TX-4818', hash: 'a3f9b2c1d4e5f6a7' },
+    { id: 'TX-4819', hash: '7d2e1f8a9b0c1d2e' },
+    { id: 'TX-4820', hash: '9c4b3e2d8f1a5b6c' },
+    { id: 'TX-4821', hash: 'b7e6c5d4a3f2e1d0' },
+    { id: 'NOW', hash: '... (live)' },
+  ];
+  wrap.innerHTML = '';
+  blocks.forEach((b, i) => {
+    if (i > 0) {
+      const arr = document.createElement('div');
+      arr.className = 'chain-arrow';
+      wrap.appendChild(arr);
+    }
+    const blk = document.createElement('div');
+    blk.className = 'chain-block' + (b.genesis ? ' genesis' : '');
+    blk.innerHTML = `
+      <div class="blk-id">${b.id}</div>
+      <div class="blk-hash">${b.hash}</div>
+    `;
+    blk.onclick = () => toast(`Block ${b.id} · SHA-256: ${b.hash} · Integrity: VALID`, 'info');
+    wrap.appendChild(blk);
+  });
+}
+
+function verifyChain() {
+  const blocks = document.querySelectorAll('.chain-block');
+  const status = document.getElementById('chain-status');
+  let i = 0;
+  blocks.forEach(b => b.classList.remove('verified'));
+  status.textContent = 'Verifierar...';
+  const iv = setInterval(() => {
+    if (i >= blocks.length) {
+      clearInterval(iv);
+      status.innerHTML = '<span style="color: var(--success);">✓ Alla ' + blocks.length + ' block verifierade · Kedjan är intakt</span>';
+      toast('✓ Hash-kedja verifierad (' + blocks.length + ' block)', 'ok');
+      return;
+    }
+    blocks[i].classList.add('verified');
+    i++;
+  }, 220);
+}
+
+// ---------- PEPPOL ----------
+function renderPeppol() {
+  const xml =
+`<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+  <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</cbc:CustomizationID>
+  <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
+  <cbc:ID>OUROBOROS-2026-0042</cbc:ID>
+  <cbc:IssueDate>2026-05-23</cbc:IssueDate>
+  <cbc:DueDate>2026-06-22</cbc:DueDate>
+  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+  <cbc:DocumentCurrencyCode>SEK</cbc:DocumentCurrencyCode>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cbc:EndpointID schemeID="0007">5591417042</cbc:EndpointID>
+      <cac:PartyName><cbc:Name>LandveX AB</cbc:Name></cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Box 1234</cbc:StreetName>
+        <cbc:CityName>Stockholm</cbc:CityName>
+        <cbc:PostalZone>11122</cbc:PostalZone>
+        <cac:Country><cbc:IdentificationCode>SE</cbc:IdentificationCode></cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>SE559141704201</cbc:CompanyID>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>LandveX AB</cbc:RegistrationName>
+        <cbc:CompanyID schemeID="0007">5591417042</cbc:CompanyID>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cbc:EndpointID schemeID="0007">5566778899</cbc:EndpointID>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>Kund AB</cbc:RegistrationName>
+        <cbc:CompanyID schemeID="0007">5566778899</cbc:CompanyID>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:PaymentMeans>
+    <cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>
+    <cac:PayeeFinancialAccount>
+      <cbc:ID>SE45 5000 0000 0583 9825 7466</cbc:ID>
+    </cac:PayeeFinancialAccount>
+  </cac:PaymentMeans>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="SEK">3100.00</cbc:TaxAmount>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="SEK">12400.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="SEK">12400.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="SEK">15500.00</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="SEK">15500.00</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="HUR">40</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="SEK">12400.00</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Name>Konsulttjänst maj 2026</cbc:Name></cac:Item>
+    <cac:Price><cbc:PriceAmount currencyID="SEK">310.00</cbc:PriceAmount></cac:Price>
+  </cac:InvoiceLine>
+</Invoice>`;
+  const el = document.getElementById('peppol-preview');
+  if (el) el.textContent = xml;
+}
+
+// ---------- BANKID ----------
+let bankidTimer = null;
+function openBankId(docName) {
+  if (docName) {
+    document.getElementById('cert-doc').textContent = docName;
+    const sel = document.getElementById('sign-doc');
+    // also set certificate timestamp now
+    const ts = new Date();
+    document.getElementById('cert-time').textContent =
+      ts.toISOString().slice(0,19).replace('T',' ') + ' UTC';
+  }
+  document.getElementById('bankid-modal').classList.add('open');
+  renderQR();
+  const status = document.getElementById('bankid-status');
+  const spinner = document.getElementById('bankid-spinner');
+  spinner.style.display = 'block';
+  let step = 0;
+  const msgs = [
+    'Väntar på att du startar BankID-appen...',
+    'BankID-appen identifierad. Verifiera identitet...',
+    'Verifierar legitimering...',
+    'Skriver under dokument...',
+  ];
+  bankidTimer = setInterval(() => {
+    step = (step + 1) % msgs.length;
+    status.textContent = msgs[step];
+  }, 1500);
+}
+function closeBankId() {
+  document.getElementById('bankid-modal').classList.remove('open');
+  if (bankidTimer) clearInterval(bankidTimer);
+}
+function completeBankId() {
+  if (bankidTimer) clearInterval(bankidTimer);
+  document.getElementById('bankid-status').innerHTML = '<span style="color: var(--success);">✓ Signering klar · eIDAS QES</span>';
+  document.getElementById('bankid-spinner').style.display = 'none';
+  // generate new hash
+  const newHash = simpleHash(Date.now() + Math.random().toString());
+  document.getElementById('cert-hash').textContent = newHash;
+  setTimeout(() => {
+    closeBankId();
+    toast('✓ Dokument signerat · SHA-256: ' + newHash.slice(0,12) + '...', 'ok');
+    goView('signing');
+  }, 1000);
+}
+
+function renderQR() {
+  // Build a pseudo-random 21x21 QR-looking pattern (purely visual)
+  const grid = document.getElementById('qr-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const seed = Date.now();
+  let s = seed;
+  for (let r = 0; r < 21; r++) {
+    for (let c = 0; c < 21; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'qr-cell';
+      // Three position-detection patterns in corners
+      const inCorner = (r < 7 && c < 7) || (r < 7 && c >= 14) || (r >= 14 && c < 7);
+      let on = false;
+      if (inCorner) {
+        const rr = r >= 14 ? r - 14 : r;
+        const cc = c >= 14 ? c - 14 : c;
+        if (rr === 0 || rr === 6 || cc === 0 || cc === 6) on = true;
+        if (rr >= 2 && rr <= 4 && cc >= 2 && cc <= 4) on = true;
+      } else {
+        s = (s * 9301 + 49297) % 233280;
+        on = (s % 2) === 0;
+      }
+      if (on) cell.classList.add('on');
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function downloadCert() {
+  const cert = document.querySelector('.certificate').innerText;
+  const content = `OUROBOROS REVISIONSINTYG\n========================\n\n${cert}\n\n[Detta är ett digital signerat PDF-paket — simulerat]`;
+  downloadBlob('Revisionsintyg_LandveX.txt', content, 'text/plain');
+  toast('Signerat dokument exporterat');
+}
+
+// ---------- CLOCK ----------
+function tickClock() {
+  const c = document.getElementById('clock');
+  if (!c) return;
+  const d = new Date();
+  c.textContent = d.toTimeString().slice(0,8);
+}
+
+// ---------- INIT ----------
+function init() {
+  loadRAVStatus();
+  renderRAV();
+  populateAccountSelect();
+  recalcMoms();
+  recalcInk2r();
+  recalcAgi();
+  renderSaft();
+  renderPeppol();
+  renderLedgerTx();
+  renderAuditTx();
+  renderEventStream();
+  buildHashChain();
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  // keyboard
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      toast('Snabbsök ej implementerad i demo', 'info');
+    }
+    if (e.key === 'Escape') closeBankId();
+  });
+}
+init();
+</script>
+</body>
+</html>

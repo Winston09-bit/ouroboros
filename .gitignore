@@ -1,0 +1,7 @@
+reconciler-core/target/
+reconciler-core/.env
+kvittovalvet-web/.next/
+kvittovalvet-web/node_modules/
+kvittovalvet-web/.env.local
+*.env
+*.env.local

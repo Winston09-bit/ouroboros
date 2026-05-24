@@ -38,7 +38,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
     ports:
-      - "5432:5432"
+      - "5433:5432"
     networks:
       - reconciler-net
     healthcheck:
@@ -66,17 +66,7 @@ services:
       - "8222:8222"   # HTTP monitoring
     networks:
       - reconciler-net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8222/healthz || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 5s
-    logging: *default-logging
 
-  # ─────────────────────────────────────────────────
-  # Redis 7 – cache and rate limiting
-  # ─────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: reconciler-redis
@@ -115,7 +105,7 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: "8080"
     ports:
-      - "8080:8080"
+      - "8090:8080"
     networks:
       - reconciler-net
     depends_on:

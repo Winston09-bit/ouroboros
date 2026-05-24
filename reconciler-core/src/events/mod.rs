@@ -95,9 +95,9 @@ impl EventBus {
     }
 
     pub async fn publish(&self, event: &FinancialEvent) -> Result<()> {
-        let subject = event.subject();
+        let subject = event.subject().to_owned();
         let payload = serde_json::to_vec(event)?;
-        self.client.publish(subject, payload.into()).await?;
+        self.client.publish(subject.clone(), payload.into()).await?;
         tracing::info!("Published event: {}", subject);
         Ok(())
     }
@@ -106,11 +106,11 @@ impl EventBus {
         &self,
         subject: &str,
     ) -> Result<async_nats::Subscriber> {
-        Ok(self.client.subscribe(subject).await?)
+        Ok(self.client.subscribe(subject.to_string()).await?)
     }
 
     pub async fn subscribe_all(&self) -> Result<async_nats::Subscriber> {
-        Ok(self.client.subscribe("finance.>").await?)
+        Ok(self.client.subscribe("finance.>".to_string()).await?)
     }
 }
 

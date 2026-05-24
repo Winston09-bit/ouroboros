@@ -1,0 +1,21 @@
+name: kvittovalvet
+
+# Root-level orchestration for the full Kvittovalvet stack
+# Run: docker compose up -d
+
+include:
+  - path: reconciler-core/docker-compose.yml
+
+services:
+  kvittovalvet-web:
+    build:
+      context: ./kvittovalvet-web
+      dockerfile: Dockerfile
+    container_name: kvittovalvet-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://reconciler-api:8080
+    depends_on:
+      - reconciler-api

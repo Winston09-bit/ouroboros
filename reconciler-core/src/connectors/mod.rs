@@ -1,5 +1,5 @@
 pub mod fortnox;
-pub mod visma;
+// pub mod visma; // TODO: uses crate::canonical (pending refactor)
 pub mod xero;
 pub mod tink;
 pub mod nordea;
@@ -98,7 +98,7 @@ impl ProviderRegistry {
         &self.banking
     }
 }
-pub mod revolut;
-pub mod stripe_connector;
-pub mod kivra;
-pub mod quickbooks;
+// pub mod revolut;        // TODO: uses crate::canonical (pending refactor)
+// pub mod stripe_connector; // TODO: uses crate::canonical (pending refactor)
+// pub mod kivra;            // TODO: uses crate::canonical (pending refactor)
+// pub mod quickbooks;       // TODO: pending

@@ -6,7 +6,7 @@
 # Stage 1: Dependency cache layer
 # Pre-build dependencies to leverage Docker layer cache
 # ─────────────────────────────────────────────────
-FROM rust:1.77-slim AS deps
+FROM rust:latest AS deps
 
 WORKDIR /app
 

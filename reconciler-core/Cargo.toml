@@ -28,3 +28,7 @@ jsonwebtoken = "9"
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 thiserror = "1"
+imap = "3"
+mail-parser = "0.9"
+regex = "1"
+native-tls = "0.2"

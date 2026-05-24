@@ -5,94 +5,176 @@
 
 ---
 
-## Snabböversikt
+## 📊 Snabböversikt
 
-| API | Typ | Status | Miljö | Prioritet |
-|-----|-----|--------|-------|-----------|
-| **Enable Banking** | Bank-aggregator | ✅ Konfigurerad | SANDBOX | P0 |
-| **Nordea Open Banking** | Bank (direkt) | ✅ Konfigurerad | SANDBOX | P0 |
-| **Revolut Business** | Bank | ✅ Konfigurerad | PRODUCTION? | P0 |
-| **Fortnox** | ERP | ❌ Saknar credentials | – | P0 |
-| **Visma eEkonomi** | ERP | ❌ Saknar credentials | – | P1 |
-| **Peppol** | E-faktura | ❌ Behöver accesspunkt | – | P1 |
-| **Tink** | Bank-aggregator (alt) | ❌ Saknar credentials | – | P2 |
-| **Kivra** | Digital post | ❌ Saknar credentials | – | P2 |
-| **Skatteverket** | Myndighet | ❌ Ingen publik API | – | P3 |
-| **Stripe** | Betalningar | ❌ Saknar credentials | – | P2 |
+### Banker / Bank-aggregatorer
+
+| API | Typ | Status | Miljö | Connector | Prio |
+|-----|-----|--------|-------|-----------|------|
+| **Tink** | Aggregator (Visa) | ✅ Credentials klara | SANDBOX | `tink_impl.rs` | P0 |
+| **Enable Banking** | Aggregator | ✅ Credentials klara | SANDBOX | `enable_banking.rs` | P0 |
+| **Aiia** | Aggregator (Mastercard) | ⏳ Backup-option | – | – | P2 |
+| **Revolut Business** | Bank (direkt) | ✅ Credentials klara | PROD | `revolut_impl.rs` | P0 |
+| **Swedbank** | Storbank | 🔄 Via Tink/Enable | sandbox | aggregator | P0 |
+| **Handelsbanken** | Storbank | 🔄 Via Tink/Enable | sandbox | aggregator | P0 |
+| **SEB** | Storbank | 🔄 Via Tink/Enable | sandbox | aggregator | P0 |
+| **Nordea** | Storbank | ✅ Direkt + via agg | SANDBOX | `nordea.rs` | P0 |
+| **Wise** | Digital | ⏳ Eget API tillgängligt | – | – | P1 |
+| **Lunar** | Digital | 🔄 Via Tink | – | aggregator | P2 |
+| **Danske Bank** | Storbank | 🔄 Via Tink/Enable | sandbox | aggregator | P1 |
+| **DNB** | Storbank (NO) | 🔄 Via Tink/Enable | sandbox | aggregator | P2 |
+
+### ERP / Bokföring
+
+| API | Typ | Status | Miljö | Prio |
+|-----|-----|--------|-------|------|
+| **Fortnox** | ERP (SE marknadsledare) | ⚠️ Email-bekräftelse expired – behöver ny ansökan | – | P0 |
+| **Visma eEkonomi** | ERP | ❌ Saknar credentials – ansök på developer.visma.com | – | P0 |
+| **Björn Lundén** | ERP | ❌ Inget öppet API – partner-only | – | P2 |
+| **PE Accounting** | ERP | ❌ Saknar credentials | – | P1 |
+
+### Merchants – Dagligvaror
+
+| Merchant | Kategori | Receipt API | Email-mönster | Status |
+|----------|----------|-------------|---------------|--------|
+| ICA Gruppen | DAGLIGVAROR | ❌ Kund-API stängt | receipt@ica.se | Email-retrieval |
+| Coop Sverige | DAGLIGVAROR | ❌ Endast app | medlem@coop.se | Email-retrieval |
+| Willys | DAGLIGVAROR | ❌ Via Axfood | no-reply@willys.se | Email-retrieval |
+| Hemköp | DAGLIGVAROR | ❌ Via Axfood | – | Email-retrieval |
+| Lidl | DAGLIGVAROR | ❌ Endast app (Lidl Plus) | – | App-scraping |
+| City Gross | DAGLIGVAROR | ❌ – | – | Manuell |
+| Axfood | DAGLIGVAROR | ⚠️ Endast B2B | – | Inv-faktura |
+
+### Merchants – Drivmedel
+
+| Merchant | Kategori | Receipt API | Status |
+|----------|----------|-------------|--------|
+| Circle K | DRIVMEDEL | ⚠️ Extraclub app | App-only |
+| OKQ8 | DRIVMEDEL | ⚠️ OKQ8 Kort | App-only |
+| ST1 | DRIVMEDEL | ⚠️ ST1 Kort | App-only |
+| Preem | DRIVMEDEL | ❌ – | Email |
+| Tesla Supercharging | DRIVMEDEL | ✅ Tesla account | Web-portal |
+| ChargeNode | DRIVMEDEL | ✅ Email | Auto-email |
+
+### Merchants – Bygg/Elektronik
+
+| Merchant | Kategori | Status |
+|----------|----------|--------|
+| Clas Ohlson | BYGG_ELEKTRONIK | Clas Ohlson Club app |
+| Bauhaus | BYGG_ELEKTRONIK | Email |
+| Biltema | BYGG_ELEKTRONIK | Biltema-konto |
+| Jula | BYGG_ELEKTRONIK | Jula Club |
+| Elgiganten | BYGG_ELEKTRONIK | Mina sidor |
+| Power | BYGG_ELEKTRONIK | Email |
+| NetOnNet | BYGG_ELEKTRONIK | Mina sidor |
+| Webhallen | BYGG_ELEKTRONIK | Mina sidor |
+
+### Hotell / Resor
+
+| Merchant | Kategori | Status |
+|----------|----------|--------|
+| Scandic Hotels | HOTELL_RESOR | Scandic Friends |
+| Strawberry (Nordic Choice) | HOTELL_RESOR | Email |
+| SJ | HOTELL_RESOR | SJ-konto API |
+| SAS | HOTELL_RESOR | EuroBonus |
+| Booking.com | HOTELL_RESOR | Email |
+
+### Revisionsbyråer (export-mål)
+
+| Byrå | Format | Status |
+|------|--------|--------|
+| PwC | SIE/audit package | Framtida |
+| KPMG | SIE/audit package | Framtida |
+| EY | SIE/audit package | Framtida |
+| Deloitte | SIE/audit package | Framtida |
+| BDO | SIE/audit package | Framtida |
+| Grant Thornton | SIE/audit package | Framtida |
+| Mazars | SIE/audit package | Framtida |
+
+### E-faktura / Standarder
+
+| Standard | Användning | Status |
+|----------|------------|--------|
+| Peppol BIS 3.0 | E-fakturor B2B | ❌ Behöver AP |
+| Svefaktura | Svenska e-fakturor | ❌ Via Peppol-AP |
+| SIE 4 | Bokföringsexport | ✅ Stöd planerat |
+
+### Infrastruktur / Övrigt
+
+| Tjänst | Användning | Status |
+|--------|------------|--------|
+| AWS S3 | Filer | ⚠️ Ej konfigurerad |
+| AWS SES | Email-skickande | ⚠️ Sandbox |
+| AWS KMS | Kryptering | ⚠️ Ej konfigurerad |
+| Resend | Transactional mail (alt.) | ⚠️ Ej konfigurerad |
+| Twilio | SMS/röst | ⚠️ Ej konfigurerad |
+| Stripe | Betalningar | ⚠️ Stub |
+| OpenAI / Anthropic | AI-klassificering | ⚠️ Via wavult-keys |
 
 ---
 
-## Steg-för-steg för att bli production-ready
+## 🔐 Credentials lokalt
 
-### FAS 1 – Bank-data live (vecka 1-2)
-- [x] Enable Banking sandbox uppsatt
-- [x] Nordea sandbox uppsatt  
-- [ ] Enable Banking → production (ansökan via enablebanking.com)
-- [ ] Nordea → production (ansök på developer.nordeaopenbanking.com)
-- [ ] Revolut → verifiera om production eller sandbox
+Alla i `~/.openclaw/secrets/`:
 
-### FAS 2 – ERP-integration (vecka 2-3)
-- [ ] **Fortnox**: Skapa app på apps.fortnox.se → få `client_id` + `client_secret`
-  - URL: https://apps.fortnox.se/integrations/
-  - Behöver: Bokföring, Faktura, Leverantörsfaktura, Filarkiv
-- [ ] **Visma**: Partner-program på developer.visma.com
-  - URL: https://developer.visma.com/api/visma-administration/
-
-### FAS 3 – E-faktura (vecka 3-4)
-- [ ] **Peppol accesspunkt**: Netnordic, Inexchange, eller Pagero
-  - Kostnad: ~500-1500 kr/mån
-  - Kräver: Org.nr 559141-7042 (LandveX AB)
-
-### FAS 4 – Enrichment (vecka 4+)
-- [ ] Tink (via Visa): developer.tink.com
-- [ ] Kivra: kivra.com/developer
-- [ ] Stripe: dashboard.stripe.com
+| Fil | Status |
+|-----|--------|
+| `tink.json` | ✅ NYTT – client_id + secret |
+| `enable-banking.json` | ✅ app_id + session-UUID |
+| `enable-banking-key.pem` | ✅ RSA private key |
+| `revolut-business-api.json` | ✅ client_id + refresh_token |
+| `revolut-private.pem` | ✅ RSA private key |
+| `nordea-api-credentials.json` | ✅ sandbox client_id |
+| `gmail-winston-wavult.env` | ✅ för OAuth retrieval |
+| `email-hypbit.env` | ✅ IMAP för inbox-scanning |
 
 ---
 
-## Credentials-läge (uppdaterat 2026-05-24)
+## 🎯 ANSÖKNINGAR SOM BEHÖVER GÖRAS (Winston)
 
-Se `~/.openclaw/secrets/` för faktiska värden.
+> Endast lista – inga ansökningar görs automatiskt.
 
-| Fil | Innehåll |
-|-----|----------|
-| `enable-banking.json` | app_id, session-id, konto-UUIDs |
-| `enable-banking-key.pem` | Private key för JWT-signering |
-| `enablebanking-config.json` | app_id sandbox, private_key_path |
-| `enablebanking-private.pem` | Private key (sandbox) |
-| `nordea-api-credentials.json` | client_id, client_secret, sandbox |
-| `revolut-business-api.json` | client_id, refresh_token, private_key |
-| `revolut-private.pem` | Revolut JWT private key |
+1. **Fortnox developer-konto** – apps.fortnox.se/integrations (förra länken expired)
+2. **Visma developer** – developer.visma.com
+3. **Tink Production** – b2bmarketing.tink.com/contact-sales (kontakta sales)
+4. **Enable Banking Production** – app.enablebanking.com
+5. **Nordea Production** – developer.nordeaopenbanking.com
+6. **PE Accounting API** – kontakta PE Accounting säljteam
+7. **AWS-konto för Kvittovalvet** – S3, SES, KMS production
+8. **Peppol-accesspunkt** – Inexchange eller Pagero (~500 kr/mån)
+9. **Domäner** – kvittovalvet.se (kvittovalvet.com om .se taget)
 
 ---
 
-## Vad varje API ger oss
+## 📁 Mapp-struktur
 
-### Enable Banking (PRIORITET P0)
-- Aggregerar 2000+ banker i Europa via ett API
-- Vi har redan konto-UUIDs: sek_1, eur, sek_2, sek_3
-- Ger: transaktioner, saldon, kontoinformation
-- **Behövs för**: Bank-sync utan att bygga per-bank
-
-### Nordea Open Banking (P0)
-- Direkt Nordea-integration via PSD2
-- Ger: transaktioner, saldon, betalningar
-- Sandbox-miljö → behöver production-ansökan
-
-### Revolut Business (P0)  
-- Revolut Business API med JWT-autentisering
-- Verifierat: client_id + refresh_token + RSA private key finns
-- Ger: transaktioner, saldon, webhooks
-- **Oklart**: production eller sandbox?
-
-### Fortnox (P0 – SAKNAS)
-- Viktigaste ERP-integrationen för Sverige
-- ~40% av svenska SMEs använder Fortnox
-- Behöver: client_id + client_secret från apps.fortnox.se
-- **ÅTGÄRD**: Winston registrerar Fortnox-app
-
-### Peppol (P1 – SAKNAS)
-- Europeisk e-fakturastandard
-- Krävs för B2B-fakturor till myndigheter
-- Behöver: accesspunkt-avtal med en Peppol-AP-leverantör
-- **ÅTGÄRD**: Kontakta Inexchange eller Pagero
+```
+api-registry/
+├── STATUS.md              ← Denna fil
+├── NEXT-STEPS.md          ← Prioriterad todo
+├── CATEGORIES.md          ← Kategori-spec
+├── banks/
+│   ├── tink.md
+│   ├── enable-banking.md
+│   ├── revolut.md
+│   ├── nordea.md
+│   ├── swedbank.md
+│   ├── handelsbanken.md
+│   ├── seb.md
+│   └── ...
+├── erp/
+│   ├── fortnox.md
+│   ├── visma.md
+│   └── pe-accounting.md
+├── merchants/
+│   ├── dagligvaror.md
+│   ├── drivmedel.md
+│   ├── bygg-elektronik.md
+│   ├── hotell-resor.md
+│   ├── restaurang.md
+│   └── transport.md
+├── e-faktura/
+│   └── peppol.md
+└── revisionsbyraer/
+    └── README.md
+```

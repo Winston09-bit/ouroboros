@@ -169,7 +169,7 @@ impl RevolutConnector {
     fn build_jwt(&self) -> Result<String> {
         let now = Utc::now().timestamp();
         let claims = JwtClaims {
-            iss: self.client_id.clone(),
+            iss: "api.wavult.com".to_string(), // must be domain without https://
             sub: self.client_id.clone(),
             aud: "https://revolut.com".to_string(),
             iat: now,
@@ -198,8 +198,8 @@ impl RevolutConnector {
         let jwt = self.build_jwt()?;
 
         let params = [
-            ("grant_type", "authorization_code"),
-            ("code", self.refresh_token.as_str()),
+            ("grant_type", "refresh_token"),
+            ("refresh_token", self.refresh_token.as_str()),
             (
                 "client_assertion_type",
                 "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",

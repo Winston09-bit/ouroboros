@@ -4,6 +4,7 @@ mod connectors;
 mod ai;
 mod events;
 mod api;
+mod retrieval;
 
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};

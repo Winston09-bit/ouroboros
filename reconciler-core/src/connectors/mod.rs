@@ -2,6 +2,7 @@ pub mod enable_banking;
 pub mod fortnox;
 pub mod revolut_impl;
 pub mod nordea;
+pub mod tink_impl;
 // pub mod visma; // TODO: uses crate::canonical (pending refactor)
 pub mod xero;
 pub mod tink;

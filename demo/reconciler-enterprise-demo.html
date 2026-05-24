@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reconciler — Autonomous Financial Operating System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+ /* Volkswagen Group corporate palette — restrained, engineered */
+ --vw-blue:#001e50;
+ --vw-blue-2:#0a2a63;
+ --vw-blue-soft:#15376f;
+ --ink:#001e50;
+ --ink-2:#3c4858;
+ --ink-3:#6b7785;
+ --ink-4:#9aa5b1;
+ --line:#dfe4e8;
+ --line-2:#c8d1d9;
+ --bg:#f4f5f6;
+ --bg-2:#eceef0;
+ --surface:#ffffff;
+ --surface-2:#fafbfc;
+ --pos:#1d6f4a;
+ --pos-bg:#e7f1ec;
+ --warn:#8a6400;
+ --warn-bg:#f6efdf;
+ --neg:#9a2c2c;
+ --neg-bg:#f4e7e7;
+ --info:#1b4e8a;
+ --info-bg:#e6edf5;
+ --accent:#00b1eb;
+ --radius:3px;
+ --shadow:0 1px 2px rgba(0,30,80,.05),0 1px 0 rgba(0,30,80,.02);
+ --shadow-2:0 4px 16px rgba(0,30,80,.10);
+ --mono:'IBM Plex Mono',ui-monospace,monospace;
+ --sans:'IBM Plex Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow:hidden}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.micro{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:0}
+::-webkit-scrollbar-track{background:transparent}
+.app{display:grid;grid-template-rows:54px 1fr;height:100vh}
+.topbar{display:flex;align-items:center;gap:24px;background:var(--vw-blue);color:#fff;padding:0 22px;border-bottom:1px solid #00163d;position:relative;z-index:30}
+.brand{display:flex;align-items:center;gap:13px;font-weight:600;letter-spacing:.04em}
+.brand .ring{width:26px;height:26px;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;position:relative}
+.brand .ring::after{content:"";position:absolute;inset:4px;border:1px solid rgba(255,255,255,.35);border-radius:50%}
+.brand small{font-size:9px;letter-spacing:.22em;opacity:.6;display:block;font-weight:500;margin-top:1px}
+.topbar .sep{width:1px;height:26px;background:rgba(255,255,255,.16)}
+.tstat{display:flex;flex-direction:column;line-height:1.1}
+.tstat .k{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);font-weight:600}
+.tstat .v{font-family:var(--mono);font-size:15px;font-weight:500;margin-top:2px}
+.tstat .v.pos{color:#7fd1a6}
+.topbar .spacer{flex:1}
+.tctrl{display:flex;align-items:center;gap:8px}
+.tbtn{font-size:11px;letter-spacing:.06em;font-weight:500;color:#fff;border:1px solid rgba(255,255,255,.22);padding:7px 13px;border-radius:var(--radius);display:flex;align-items:center;gap:7px;transition:.15s;text-transform:uppercase}
+.tbtn:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.4)}
+.tbtn .dot{width:7px;height:7px;border-radius:50%;background:#7fd1a6}
+.tbtn.paused .dot{background:#e0b455;animation:none}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#7fd1a6;animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(127,209,166,.5)}50%{opacity:.55;box-shadow:0 0 0 5px rgba(127,209,166,0)}}
+.body{display:grid;grid-template-columns:230px 1fr;overflow:hidden}
+.nav{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto}
+.nav .grp{padding:16px 14px 6px;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-4);font-weight:600}
+.navitem{display:flex;align-items:center;gap:11px;padding:9px 16px;font-size:13px;color:var(--ink-2);border-left:3px solid transparent;transition:.12s;font-weight:400;width:100%;text-align:left}
+.navitem:hover{background:var(--surface-2);color:var(--ink)}
+.navitem.active{background:var(--bg-2);color:var(--ink);border-left-color:var(--vw-blue);font-weight:600}
+.navitem .ico{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.navitem.active .ico{opacity:1}
+.navitem .badge{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:600;background:var(--bg-2);color:var(--ink-3);padding:1px 7px;border-radius:10px;min-width:22px;text-align:center}
+.navitem .badge.alert{background:var(--warn-bg);color:var(--warn)}
+.nav .foot{margin-top:auto;padding:14px;border-top:1px solid var(--line);font-size:10px;color:var(--ink-4);line-height:1.5}
+.main{overflow-y:auto;padding:24px 28px 60px;position:relative}
+.main::before{content:"";position:fixed;inset:54px 0 0 230px;pointer-events:none;z-index:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:46px 46px;opacity:.28;-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.5),transparent 70%);mask-image:linear-gradient(180deg,rgba(0,0,0,.5),transparent 70%)}
+.main>*{position:relative;z-index:1}
+.page-h{display:flex;align-items:flex-end;gap:16px;margin-bottom:22px;border-bottom:1px solid var(--line);padding-bottom:16px}
+.page-h h1{font-size:23px;font-weight:600;letter-spacing:-.01em}
+.page-h .sub{font-size:13px;color:var(--ink-3);margin-bottom:3px}
+.page-h .num{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-4);letter-spacing:.1em}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card .hd{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--line)}
+.card .hd h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.card .bd{padding:16px}
+.kpi{padding:16px 16px 17px}
+.kpi .lab{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.kpi .val{font-family:var(--mono);font-size:30px;font-weight:500;letter-spacing:-.02em;margin-top:7px;line-height:1}
+.kpi .val small{font-size:15px;color:var(--ink-3)}
+.kpi .meta{font-size:11px;color:var(--ink-3);margin-top:8px;display:flex;align-items:center;gap:6px}
+.trend.up{color:var(--pos)}.trend.down{color:var(--neg)}
+.gauge-wrap{display:flex;align-items:center;gap:22px}
+.gauge{position:relative;width:128px;height:128px;flex-shrink:0}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge .ctr .big{font-family:var(--mono);font-size:30px;font-weight:600;letter-spacing:-.02em}
+.gauge .ctr .lil{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.gauge-legend div{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-2);padding:4px 0}
+.gauge-legend .sw{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.gauge-legend .n{margin-left:auto;font-family:var(--mono);font-weight:600}
+.feed{max-height:340px;overflow-y:auto}
+.fitem{display:flex;gap:11px;padding:9px 16px;border-bottom:1px solid var(--surface-2);font-size:12.5px;animation:slidein .35s ease}
+.fitem:nth-child(odd){background:var(--surface-2)}
+@keyframes slidein{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.fitem .t{font-family:var(--mono);font-size:11px;color:var(--ink-4);white-space:nowrap;padding-top:1px}
+.fitem .tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:1px 6px;border-radius:2px;white-space:nowrap;align-self:flex-start;margin-top:1px}
+.fitem .msg{flex:1;color:var(--ink-2)}
+.fitem .msg b{color:var(--ink);font-weight:600}
+.tag.evt{background:var(--info-bg);color:var(--info)}
+.tag.ok{background:var(--pos-bg);color:var(--pos)}
+.tag.warn{background:var(--warn-bg);color:var(--warn)}
+.tag.err{background:var(--neg-bg);color:var(--neg)}
+.tag.ai{background:#ece9f5;color:#4b3b80}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{text-align:left;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);position:sticky;top:0;z-index:2}
+thead th.r{text-align:right}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--surface-2);color:var(--ink-2)}
+tbody td.r{text-align:right;font-family:var(--mono)}
+tbody tr{transition:.1s;cursor:pointer}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.sel{background:var(--info-bg)}
+.merch{display:flex;align-items:center;gap:10px}
+.logo{width:26px;height:26px;border-radius:var(--radius);background:var(--bg-2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:var(--ink);flex-shrink:0;font-family:var(--mono)}
+.amt.neg{color:var(--ink)}
+.amt.pos{color:var(--pos)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.pill .pd{width:6px;height:6px;border-radius:50%}
+.pill.booked{background:var(--pos-bg);color:var(--pos)}.pill.booked .pd{background:var(--pos)}
+.pill.review{background:var(--warn-bg);color:var(--warn)}.pill.review .pd{background:var(--warn)}
+.pill.processing{background:var(--info-bg);color:var(--info)}.pill.processing .pd{background:var(--info);animation:pulse 1.4s infinite}
+.pill.recovering{background:#ece9f5;color:#4b3b80}.pill.recovering .pd{background:#4b3b80;animation:pulse 1.4s infinite}
+.pill.held{background:var(--neg-bg);color:var(--neg)}.pill.held .pd{background:var(--neg)}
+.pill.detected{background:var(--bg-2);color:var(--ink-3)}.pill.detected .pd{background:var(--ink-4)}
+.conf{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.conf .bar{width:46px;height:5px;background:var(--bg-2);border-radius:3px;overflow:hidden}
+.conf .bar i{display:block;height:100%;background:var(--vw-blue)}
+.conf.low .bar i{background:var(--warn)}
+.conf .pct{font-family:var(--mono);font-size:11.5px;font-weight:600;width:42px;text-align:right}
+.conn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(214px,1fr));gap:13px}
+.conn{border:1px solid var(--line);border-radius:var(--radius);padding:15px;background:var(--surface);box-shadow:var(--shadow);transition:.15s}
+.conn:hover{box-shadow:var(--shadow-2);transform:translateY(-1px)}
+.conn .row{display:flex;align-items:center;gap:12px;margin-bottom:13px}
+.conn .nm{font-weight:600;font-size:14px}
+.conn .ty{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4);font-weight:600}
+.conn .protos{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:13px;min-height:22px}
+.proto{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);border:1px solid var(--line);padding:2px 6px;border-radius:2px}
+.cbtn{width:100%;font-size:12px;font-weight:600;letter-spacing:.04em;padding:9px;border-radius:var(--radius);border:1px solid var(--vw-blue);color:var(--vw-blue);background:#fff;transition:.15s;text-transform:uppercase}
+.cbtn:hover{background:var(--vw-blue);color:#fff}
+.cbtn.connected{background:var(--pos-bg);color:var(--pos);border-color:transparent;cursor:default}
+.cbtn.connecting{background:var(--bg-2);color:var(--ink-3);border-color:var(--line);cursor:wait}
+.conn.is-on{border-color:#bcd0c6}
+.spin{width:13px;height:13px;border:2px solid var(--ink-4);border-top-color:transparent;border-radius:50%;display:inline-block;animation:rot .6s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes rot{to{transform:rotate(360deg)}}
+.agent{display:flex;gap:14px;padding:16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+.agent .av{width:42px;height:42px;border-radius:var(--radius);background:var(--vw-blue);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.agent.busy .av{background:var(--vw-blue);box-shadow:0 0 0 0 rgba(0,30,80,.4);animation:work 1.5s infinite}
+@keyframes work{0%{box-shadow:0 0 0 0 rgba(0,30,80,.30)}70%{box-shadow:0 0 0 8px rgba(0,30,80,0)}100%{box-shadow:0 0 0 0 rgba(0,30,80,0)}}
+.agent .nm{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.agent .st{font-size:11.5px;color:var(--ink-3);margin-top:2px;min-height:17px}
+.agent .stats{display:flex;gap:18px;margin-top:11px}
+.agent .stats div{display:flex;flex-direction:column}
+.agent .stats .n{font-family:var(--mono);font-size:17px;font-weight:600;line-height:1}
+.agent .stats .l{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4);font-weight:600;margin-top:3px}
+.stateled{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--bg-2);color:var(--ink-3)}
+.stateled.on{background:var(--pos-bg);color:var(--pos)}
+.drawer-bg{position:fixed;inset:0;background:rgba(0,30,80,.32);z-index:40;opacity:0;pointer-events:none;transition:.2s}
+.drawer-bg.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:560px;max-width:94vw;background:var(--surface);z-index:41;transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(0,30,80,.18)}
+.drawer.show{transform:none}
+.drawer .dh{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.drawer .dh .x{margin-left:auto;font-size:22px;color:var(--ink-3);line-height:1;width:30px;height:30px;border-radius:var(--radius)}
+.drawer .dh .x:hover{background:var(--bg-2);color:var(--ink)}
+.drawer .dbody{overflow-y:auto;padding:22px;flex:1}
+.dsec{margin-bottom:24px}
+.dsec>.micro{display:block;margin-bottom:11px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+.kv{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--surface-2)}
+.kv .k{color:var(--ink-3)}.kv .v{font-family:var(--mono);font-weight:500}
+.tl{position:relative;padding-left:24px}
+.tl::before{content:"";position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--line)}
+.tl .ev{position:relative;padding:0 0 17px}
+.tl .ev::before{content:"";position:absolute;left:-21px;top:3px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--vw-blue)}
+.tl .ev.aiv::before{border-color:#4b3b80}
+.tl .ev.okv::before{background:var(--pos);border-color:var(--pos)}
+.tl .ev .et{font-family:var(--mono);font-size:11px;font-weight:600}
+.tl .ev .em{font-size:12px;color:var(--ink-2);margin-top:2px}
+.tl .ev .ets{font-family:var(--mono);font-size:10px;color:var(--ink-4);margin-top:2px}
+.evidence{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px}
+.evidence .er{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:12.5px}
+.evidence .er .ck{color:var(--pos);font-weight:700}
+.appr{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);padding:16px;margin-bottom:13px}
+.appr .top{display:flex;align-items:flex-start;gap:13px}
+.appr .why{background:var(--warn-bg);border-left:3px solid var(--warn);padding:9px 12px;border-radius:2px;font-size:12.5px;color:#6b5200;margin:13px 0}
+.appr .acts{display:flex;gap:10px}
+.btn{font-size:12.5px;font-weight:600;letter-spacing:.03em;padding:9px 18px;border-radius:var(--radius);transition:.15s}
+.btn.primary{background:var(--vw-blue);color:#fff}
+.btn.primary:hover{background:var(--vw-blue-2)}
+.btn.ghost{border:1px solid var(--line-2);color:var(--ink-2)}
+.btn.ghost:hover{background:var(--bg-2)}
+.btn.danger{border:1px solid #d9b3b3;color:var(--neg)}
+.btn.danger:hover{background:var(--neg-bg)}
+.vatrate{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--surface-2)}
+.vatrate .rt{font-family:var(--mono);font-size:18px;font-weight:600;width:54px}
+.vatbar{flex:1;height:8px;background:var(--bg-2);border-radius:4px;overflow:hidden}
+.vatbar i{display:block;height:100%;background:var(--vw-blue);transition:width .5s}
+.meter{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--surface-2)}
+.meter .nm{width:170px;font-size:12.5px;color:var(--ink-2)}
+.meter .track{flex:1;height:6px;background:var(--bg-2);border-radius:3px;overflow:hidden}
+.meter .track i{display:block;height:100%;background:var(--pos);transition:width .4s}
+.meter .track i.warn{background:var(--warn)}
+.meter .vv{font-family:var(--mono);font-size:12px;font-weight:600;width:60px;text-align:right}
+.chaos-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.chaosbtn{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:13px;text-align:left;transition:.15s}
+.chaosbtn:hover{border-color:var(--neg);background:var(--neg-bg)}
+.chaosbtn .nm{font-weight:600;font-size:13px;margin-bottom:3px}
+.chaosbtn .ds{font-size:11px;color:var(--ink-3)}
+.empty{text-align:center;padding:50px 20px;color:var(--ink-4)}
+.empty .big{font-size:15px;color:var(--ink-3);font-weight:500;margin-bottom:6px}
+.note{font-size:12px;color:var(--ink-3);background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--vw-blue);padding:11px 14px;border-radius:2px;margin-bottom:18px;line-height:1.5}
+.flash{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--vw-blue);color:#fff;padding:12px 22px;border-radius:var(--radius);font-size:13px;z-index:60;opacity:0;transition:.25s;box-shadow:var(--shadow-2);display:flex;align-items:center;gap:10px}
+.flash.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+.scroll-x{overflow-x:auto}
+@media(max-width:1100px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+ <header class="topbar">
+ <div class="brand">
+ <div class="ring">R</div>
+ <div>RECONCILER<small>AUTONOMOUS FINANCIAL OS</small></div>
+ </div>
+ <div class="sep"></div>
+ <div class="tstat"><span class="k">Autonomy</span><span class="v pos" id="t-aut">—</span></div>
+ <div class="tstat"><span class="k">Events processed</span><span class="v" id="t-evt">0</span></div>
+ <div class="tstat"><span class="k">Cash position</span><span class="v" id="t-cash">—</span></div>
+ <div class="spacer"></div>
+ <div class="tctrl">
+ <span class="live-dot" id="live"></span>
+ <span class="mono" id="t-clock" style="font-size:13px;opacity:.85">00:00:00</span>
+ <button class="tbtn" id="btn-pause"><span class="dot"></span><span id="pause-lbl">Live</span></button>
+ </div>
+ </header>
+ <div class="body">
+ <nav class="nav">
+ <div class="grp">Operations</div>
+ <button class="navitem active" data-view="cockpit"><span class="ico">◧</span>Cockpit</button>
+ <button class="navitem" data-view="ledger"><span class="ico">≡</span>Transaktioner<span class="badge" id="nb-led">0</span></button>
+ <button class="navitem" data-view="approvals"><span class="ico">⚠</span>Granskning<span class="badge alert" id="nb-app">0</span></button>
+ <div class="grp">Intelligence</div>
+ <button class="navitem" data-view="agents"><span class="ico">◆</span>AI-agenter<span class="badge" id="nb-agt">6</span></button>
+ <button class="navitem" data-view="vat"><span class="ico">%</span>Moms &amp; skatt</button>
+ <button class="navitem" data-view="audit"><span class="ico">◰</span>Revision &amp; lineage</button>
+ <div class="grp">Infrastructure</div>
+ <button class="navitem" data-view="connect"><span class="ico">⊕</span>Anslutningar<span class="badge" id="nb-con">0</span></button>
+ <button class="navitem" data-view="events"><span class="ico">⟳</span>Händelseström</button>
+ <button class="navitem" data-view="system"><span class="ico">⊟</span>Observability</button>
+ <div class="foot">
+ Sandbox-miljö · simulerad finansiell värld<br>
+ Rust core · event-sourced ledger<br>
+ <span style="color:var(--ink-3)">v0.9 · region eu-north-1</span>
+ </div>
+ </nav>
+ <main class="main" id="main"></main>
+ </div>
+</div>
+<div class="drawer-bg" id="drawer-bg"></div>
+<aside class="drawer" id="drawer">
+ <div class="dh">
+ <div>
+ <div class="micro">Transaction · audit lineage</div>
+ <div id="dh-title" style="font-size:17px;font-weight:600;margin-top:3px">—</div>
+ </div>
+ <button class="x" id="drawer-x">×</button>
+ </div>
+ <div class="dbody" id="drawer-body"></div>
+</aside>
+<div class="flash" id="flash"></div>
+<script>
+"use strict";
+const BANKS=[{id:'nordea',nm:'Nordea',ty:'Bank · SE',protos:['PSD2','SEPA','SWIFT'],cur:'SEK'},{id:'seb',nm:'SEB',ty:'Bank · SE',protos:['PSD2','SEPA','RTP'],cur:'SEK'},{id:'revolut',nm:'Revolut',ty:'Bank · EU',protos:['Open Banking','SEPA'],cur:'EUR'},{id:'amex',nm:'American Express',ty:'Card · Global',protos:['Card rails'],cur:'SEK'},{id:'chase',nm:'Chase',ty:'Bank · US',protos:['ACH','Fedwire'],cur:'USD'},{id:'hsbc',nm:'HSBC',ty:'Bank · UK',protos:['Open Banking UK','SWIFT'],cur:'GBP'}];
+const ERPS=[{id:'fortnox',nm:'Fortnox',ty:'ERP · SE'},{id:'visma',nm:'Visma',ty:'ERP · SE'},{id:'xero',nm:'Xero',ty:'ERP · Global'},{id:'sap',nm:'SAP',ty:'ERP · Enterprise'}];
+const MERCHANTS=[{nm:'ICA Maxi Lindhagen',ab:'IC',cat:'Provisions',vat:.12,sign:-1,lo:240,hi:1850,recvProb:.55},{nm:'Amazon Web Services',ab:'AW',cat:'Cloud infra',vat:.25,sign:-1,lo:4200,hi:21000,recvProb:.2},{nm:'SJ AB',ab:'SJ',cat:'Travel',vat:.06,sign:-1,lo:380,hi:2400,recvProb:.4},{nm:'Telia Sverige AB',ab:'TE',cat:'Telecom',vat:.25,sign:-1,lo:790,hi:3100,recvProb:.15},{nm:'Spotify Technology',ab:'SP',cat:'Software',vat:.25,sign:-1,lo:120,hi:340,recvProb:.1},{nm:'Clas Ohlson',ab:'CO',cat:'Office',vat:.25,sign:-1,lo:90,hi:1600,recvProb:.6},{nm:'Scaleway SAS',ab:'SC',cat:'Cloud infra',vat:.20,sign:-1,lo:1900,hi:8800,recvProb:.3},{nm:'Stripe Payments',ab:'ST',cat:'Revenue',vat:.00,sign:+1,lo:8000,hi:96000,recvProb:.9},{nm:'Klarna Bank AB',ab:'KL',cat:'Revenue',vat:.00,sign:+1,lo:12000,hi:140000,recvProb:.92},{nm:'Notion Labs',ab:'NO',cat:'Software',vat:.25,sign:-1,lo:140,hi:520,recvProb:.2},{nm:'WeWork Sthlm',ab:'WE',cat:'Rent',vat:.25,sign:-1,lo:14000,hi:14000,recvProb:.3},{nm:'Lön — personal',ab:'LÖ',cat:'Payroll',vat:.00,sign:-1,lo:48000,hi:52000,recvProb:1}];
+const ICA_ALIASES=['ICA MAXI','ICA Sverige AB','ICA Göteborg','ICA#4412','ICA Kvantum'];
+const AGENTS=[{id:'recon',nm:'Reconciliation Agent',ico:'⇄',desc:'Matchar transaktioner mot ledger, bedömer confidence, flaggar avvikelser.',done:0,busy:false,last:'Väntar på inflöde'},{id:'receipt',nm:'Receipt Recovery Agent',ico:'❏',desc:'Återskapar saknade kvitton — söker mail, Kivra, ERP; kontaktar leverantör.',done:0,busy:false,last:'Inga saknade kvitton'},{id:'vat',nm:'VAT Agent',ico:'%',desc:'Beräknar moms, verifierar satser per jurisdiktion, bygger momsrapport.',done:0,busy:false,last:'Momsbok i balans'},{id:'audit',nm:'Audit Agent',ico:'◰',desc:'Bygger revisionsunderlag, verifierar lineage, exporterar audit packs.',done:0,busy:false,last:'Lineage komplett'},{id:'treas',nm:'Treasury Agent',ico:'≈',desc:'Analyserar runway, likviditetsrisk och optimerar cashflow i realtid.',done:0,busy:false,last:'Runway nominell'},{id:'comm',nm:'Communication Agent',ico:'✉',desc:'Mailar leverantörer, följer upp, sammanfattar och eskalerar vid behov.',done:0,busy:false,last:'Inga öppna trådar'}];
+const _savedConns=(()=>{try{const v=localStorage.getItem('reconciler.conns');return v?JSON.parse(v):{}}catch(e){return{}}})();const S={view:'cockpit',running:true,tick:0,clockBase:Date.now(),conns:_savedConns,txns:[],events:[],approvals:[],cash:0,vat:{collected:0,deductible:0,byRate:{}},metrics:{autoHandled:0,totalHandled:0,retries:0,ocrFail:0,dupes:0,escalations:0},agents:Object.fromEntries(AGENTS.map(a=>[a.id,{...a}])),selected:null,txCounter:1000,dirty:true};
+let SPEED=1;
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const fmt=(n)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:0}).format(Math.round(n));
+const money=(n)=>fmt(n)+' kr';
+const pad=n=>String(n).padStart(2,'0');
+function simClock(){const sec=Math.floor((Date.now()-S.clockBase)/1000);return pad(8+Math.floor(sec/3600)%24)+':'+pad(Math.floor(sec/60)%60)+':'+pad(sec%60)}
+let evtSeq=0;
+function emit(type,msg,kind='evt',txnId=null){evtSeq++;const e={seq:evtSeq,type,msg,kind,txnId,t:simClock(),ts:Date.now()};S.events.unshift(e);if(S.events.length>400)S.events.length=400;if(txnId){const tx=S.txns.find(t=>t.id===txnId);if(tx)tx.lineage.push(e)}S.dirty=true;return e}
+function flash(msg){const f=$('#flash');f.innerHTML='<span class="live-dot"></span>'+msg;f.classList.add('show');clearTimeout(f._t);f._t=setTimeout(()=>f.classList.remove('show'),2600)}
+function connectedBanks(){return BANKS.filter(b=>S.conns[b.id]==='on')}
+function autonomyPct(){if(S.metrics.totalHandled===0)return 0;return S.metrics.autoHandled/S.metrics.totalHandled*100}
+function connect(id){if(S.conns[id])return;const all=[...BANKS,...ERPS];const c=all.find(x=>x.id===id);S.conns[id]='connecting';emit('ConnectorAuthInitiated',`Startar OAuth-flöde mot <b>${c.nm}</b> · provider abstraction kalibrerar`,'evt');render();setTimeout(()=>{emit('OAuthConsentGranted',`${c.nm}: consent beviljat · scopes auto-mappade`,'ok');render()},700);setTimeout(()=>{emit('WebhookRegistered',`${c.nm}: webhooks registrerade · schema normaliserat till canonical ontology`,'ok');render()},1300);setTimeout(()=>{S.conns[id]='on';try{localStorage.setItem('reconciler.conns',JSON.stringify(S.conns))}catch(e){}emit('ConnectorOnline',`<b>${c.nm}</b> är ansluten · realtidssync aktiv`,'ok');if(BANKS.find(b=>b.id===id)){const seed=ri(60000,180000);S.cash+=seed;emit('BalanceSynced',`${c.nm}: ingående saldo ${money(seed)} synkat`,'evt')}flash(`${c.nm} ansluten — inflöde startar autonomt`);render()},2000)}
+function newTxn(){const banks=connectedBanks();if(!banks.length)return;const bank=pick(banks);let m=pick(MERCHANTS);let amount=Math.round(rnd(m.lo,m.hi));let display=m.nm;if(m.ab==='IC'&&Math.random()<0.6)display=pick(ICA_ALIASES);const id='TX-'+(++S.txCounter);const hasReceipt=Math.random()<m.recvProb;const tx={id,bank:bank.nm,bankId:bank.id,merchant:m,display,amount,sign:m.sign,gross:amount,vatRate:m.vat,vat:m.sign<0?Math.round(amount-amount/(1+m.vat)):0,status:'detected',confidence:0,hasReceipt,evidence:[],lineage:[],created:Date.now(),held:false};S.txns.unshift(tx);if(S.txns.length>180)S.txns.length=180;emit('TransactionDetected',`${bank.nm}: ${tx.sign<0?'utbetalning':'inbetalning'} <b>${money(amount)}</b> · ${display}`,'evt',id);return tx}
+function resolveEntity(tx){if(tx.display!==tx.merchant.nm){emit('EntityResolved',`"${tx.display}" → kanonisk entitet <b>${tx.merchant.nm}</b> (vector + probabilistic match)`,'ai',tx.id)}}
+function scoreConfidence(tx){let c=0.55;c+=0.22;c+=tx.hasReceipt?0.16:-0.06;c+=(tx.merchant.cat==='Revenue'||tx.merchant.cat==='Payroll')?0.10:0.06;if(tx.display!==tx.merchant.nm)c-=0.05;c+=rnd(-0.05,0.06);c=Math.max(0.42,Math.min(0.998,c));tx.confidence=c;tx.evidence=[{ok:true,t:`Belopp matchat mot bankflöde (${money(tx.gross)})`},{ok:true,t:`Leverantör verifierad: ${tx.merchant.nm}`},{ok:c>0.7,t:`Historiskt mönster ${c>0.7?'matchat':'osäkert'} · kategori ${tx.merchant.cat}`},{ok:tx.hasReceipt,t:tx.hasReceipt?`Underlag/kvitto kopplat`:`Underlag saknas`},{ok:true,t:`Moms ${(tx.vatRate*100)|0}% konsistent`}]}
+function bookTxn(tx,auto=true){tx.status='booked';S.cash+=tx.sign*tx.gross;if(tx.sign<0&&tx.vat>0){S.vat.deductible+=tx.vat;const k=(tx.vatRate*100)|0;S.vat.byRate[k]=(S.vat.byRate[k]||0)+tx.vat}S.metrics.totalHandled++;if(auto)S.metrics.autoHandled++;S.agents.recon.done++;S.agents.vat.done++;S.agents.audit.done++;emit('VATCalculated',`Moms ${(tx.vatRate*100)|0}% = ${money(tx.vat)} · verifierad mot SE-regelverk`,'ai',tx.id);emit('LedgerEntryPosted',`Dubbel bokföring postad · ledger i balans`,'ok',tx.id);emit('AuditTrailGenerated',`Lineage förseglad · immutable · konfidens ${(tx.confidence*100).toFixed(1)}%`,'ai',tx.id);if(auto)emit('AutoBooked',`<b>Auto-bokförd</b> utan människa · ${money(tx.gross)} ${tx.merchant.nm}`,'ok',tx.id);else emit('ApprovedBooked',`Bokförd efter manuellt godkännande · ${money(tx.gross)}`,'ok',tx.id);S.dirty=true}
+function startReceiptRecovery(tx){tx.status='recovering';const a=S.agents.receipt;a.busy=true;a.last=`Återskapar kvitto för ${tx.merchant.nm}`;const co=S.agents.comm;co.busy=true;co.last=`Kontaktar ${tx.merchant.nm}`;const steps=[['SearchedMailbox','Sökte mailbox · ingen träff','evt'],['SearchedKivra','Sökte Kivra digital brevlåda · ingen träff','evt'],['SearchedERP','Sökte ERP-arkiv · ingen träff','evt'],['MerchantIdentified',`Identifierade merchant-endpoint för ${tx.merchant.nm}`,'ai'],['VendorContacted',`Skickade autonom förfrågan till ${tx.merchant.nm}`,'ai'],['VendorFollowup','Påminnelse skickad · väntar svar','evt'],['ReceiptReceived','Svar mottaget · PDF inkommen','ok'],['OCRCompleted','OCR + layout analysis klar · belopp & moms extraherade','ai']];let i=0;const run=()=>{if(i>=steps.length){a.busy=false;a.done++;a.last='Kvitto återskapat & verifierat';co.busy=false;co.last='Tråd avslutad';tx.hasReceipt=true;scoreConfidence(tx);emit('ReceiptRecovered',`Saknat kvitto <b>återskapat autonomt</b> · ${tx.merchant.nm}`,'ok',tx.id);bookTxn(tx,true);render();return}const[t,m,k]=steps[i++];emit(t,m,k,tx.id);render();setTimeout(run,rnd(520,900)/SPEED)};emit('ReceiptRecoveryStarted',`Receipt Recovery Agent startad · ${tx.merchant.nm}`,'ai',tx.id);setTimeout(run,400/SPEED)}
+function processTxn(tx){tx.status='processing';const a=S.agents.recon;a.busy=true;a.last=`Matchar ${tx.merchant.nm} · ${money(tx.gross)}`;resolveEntity(tx);setTimeout(()=>{scoreConfidence(tx);emit('ConfidenceScored',`Confidence <b>${(tx.confidence*100).toFixed(1)}%</b> beräknad · ${tx.evidence.filter(e=>e.ok).length}/${tx.evidence.length} evidens ok`,'ai',tx.id);a.busy=false;a.last=`Senast: ${tx.merchant.nm} @ ${(tx.confidence*100).toFixed(0)}%`;if(!tx.hasReceipt&&tx.merchant.recvProb<1&&Math.random()<0.85){startReceiptRecovery(tx)}else if(tx.confidence>=0.95){bookTxn(tx,true)}else if(tx.confidence>=0.85){bookTxn(tx,true)}else{tx.status='review';if(!S.approvals.includes(tx.id))S.approvals.push(tx.id);S.metrics.escalations++;emit('EscalatedToHuman',`Confidence under tröskel (${(tx.confidence*100).toFixed(1)}%) · <b>eskalerad till granskning</b>`,'warn',tx.id)}render()},rnd(700,1400)/SPEED)}
+function injectChaos(type){const banks=connectedBanks();if(!banks.length){flash('Anslut minst en bank först');return}if(type==='dupe'){const base=S.txns.find(t=>t.status==='booked')||S.txns[0];if(!base){flash('Ingen transaktion att duplicera ännu');return}const id='TX-'+(++S.txCounter);emit('DuplicateDetected',`Duplicerad payload upptäckt (${base.merchant.nm} ${money(base.gross)}) · idempotency-nyckel matchar`,'warn',id);setTimeout(()=>{S.metrics.dupes++;emit('DuplicateDiscarded',`Dubblett kasserad autonomt · ledger oförändrad`,'ok',id);render()},700)}else if(type==='corrupt'){const tx=newTxn();if(!tx)return;tx.hasReceipt=false;emit('CorruptedPDFReceived',`Korrupt PDF mottagen för ${tx.merchant.nm} · OCR misslyckades`,'err',tx.id);S.metrics.ocrFail++;let r=0;const retry=()=>{r++;S.metrics.retries++;emit('OCRRetry',`OCR retry ${r}/3 · backoff ${r*400}ms`,'warn',tx.id);if(r>=3){emit('OCREscalated',`OCR gav upp efter 3 försök · eskalerad till granskning`,'warn',tx.id);tx.status='review';tx.confidence=0.4;scoreConfidence(tx);tx.confidence=0.4;if(!S.approvals.includes(tx.id))S.approvals.push(tx.id);S.metrics.escalations++;render();return}setTimeout(retry,600)};setTimeout(retry,600)}else if(type==='webhook'){emit('WebhookDelayed',`Fördröjd webhook upptäckt · ${pick(banks).nm} · out-of-order event buffrat`,'warn');setTimeout(()=>emit('WebhookReordered',`Event omsorterat via sequence-nummer · konsistens återställd`,'ok'),800)}else if(type==='outage'){const b=pick(banks);emit('ConnectorDegraded',`${b.nm} API svarar långsamt (latency spike 4200ms) · circuit breaker armerad`,'err');setTimeout(()=>emit('ConnectorRecovered',`${b.nm} återställd · buffrade events replayade`,'ok'),1600);S.metrics.retries+=2}else if(type==='fraud'){const tx=newTxn();if(!tx)return;tx.confidence=0.33;tx.status='held';tx.held=true;emit('FraudSuspected',`<b>Misstänkt avvikelse</b> · ${tx.merchant.nm} ${money(tx.gross)} · vendor risk score 0.82`,'err',tx.id);emit('PaymentHeld',`Transaktion fryst i avvaktan på granskning · behavioral anomaly`,'warn',tx.id);if(!S.approvals.includes(tx.id))S.approvals.push(tx.id);S.metrics.escalations++}render()}
+function approve(id){const tx=S.txns.find(t=>t.id===id);if(!tx)return;S.approvals=S.approvals.filter(x=>x!==id);tx.held=false;emit('ApprovalGranted',`Människa godkände ${tx.id} · ${tx.merchant.nm}`,'ok',id);bookTxn(tx,false);flash(`Godkänd & bokförd: ${tx.merchant.nm}`);render()}
+function reject(id){const tx=S.txns.find(t=>t.id===id);if(!tx)return;S.approvals=S.approvals.filter(x=>x!==id);tx.status='held';tx.held=true;S.metrics.totalHandled++;emit('ApprovalRejected',`Människa avvisade ${tx.id} · markerad för utredning`,'err',id);flash(`Avvisad: ${tx.merchant.nm}`);render()}
+function step(){if(!S.running)return;S.tick++;const banks=connectedBanks();if(banks.length){if(Math.random()<Math.min(0.85,0.35+banks.length*0.12)){const tx=newTxn();if(tx)setTimeout(()=>processTxn(tx),rnd(250,700)/SPEED)}if(S.tick%6===0){const t=S.agents.treas;const days=Math.max(1,Math.round(S.cash/16000));t.last=`Runway ${days} dagar · likviditet ${S.cash<0?'NEGATIV':'nominell'}`;t.done++;if(S.cash<0)emit('TreasuryRiskDetected',`Negativ likviditet · ${money(S.cash)} · larm till treasury`,'warn');else if(S.tick%18===0)emit('TreasuryAnalysed',`Cashflow analyserad · runway ${days} dagar · ingen risk`,'evt')}}S.dirty=true}
+function render(){S.dirty=true}
+function paint(){$('#t-aut').textContent=autonomyPct().toFixed(1)+'%';$('#t-evt').textContent=fmt(evtSeq);$('#t-cash').textContent=money(S.cash);$('#t-clock').textContent=simClock();$('#nb-led').textContent=S.txns.length;$('#nb-con').textContent=Object.values(S.conns).filter(v=>v==='on').length;const appN=S.approvals.length;const appBadge=$('#nb-app');appBadge.textContent=appN;appBadge.style.display=appN?'':'inline-block';appBadge.className='badge'+(appN?' alert':'');$$('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.view===S.view));$('#main').innerHTML=VIEWS[S.view]();S.dirty=false}
+function statusPill(tx){const map={booked:['booked','Bokförd'],review:['review','Granskning'],processing:['processing','Bearbetar'],recovering:['recovering','Återhämtar kvitto'],held:['held','Fryst'],detected:['detected','Upptäckt']};const[c,l]=map[tx.status]||['detected','—'];return `<span class="pill ${c}"><span class="pd"></span>${l}</span>`}
+function confBar(tx){if(!tx.confidence)return '<span style="color:var(--ink-4)" class="mono">—</span>';const low=tx.confidence<0.85;return `<span class="conf ${low?'low':''}"><span class="bar"><i style="width:${(tx.confidence*100).toFixed(0)}%"></i></span><span class="pct">${(tx.confidence*100).toFixed(1)}%</span></span>`}
+function pageHead(title,sub,num){return `<div class="page-h"><h1>${title}</h1><div class="sub">${sub}</div><div class="num">${num||''}</div></div>`}
+function vCockpit(){const aut=autonomyPct();const onBanks=connectedBanks().length;const booked=S.txns.filter(t=>t.status==='booked').length;const recovering=S.txns.filter(t=>t.status==='recovering').length;if(onBanks===0){return pageHead('Cockpit','Realtidsöversikt av den autonoma ekonomin','SANDBOX')+`<div class="note">Detta är en <b>simulerad finansiell värld</b> — fake banker, företag, kvitton, moms och edge cases. Inga riktiga pengar. Härda systemet innan launch.</div><div class="empty"><div class="big">Ingen datakälla ansluten ännu</div>Anslut en bank eller ett ERP under <b>Anslutningar</b> så börjar den autonoma motorn observera ekonomin i realtid.<div style="margin-top:18px"><button class="btn primary" onclick="go('connect')">Gå till Anslutningar →</button></div></div>`}const R=54,C=2*Math.PI*R,off=C*(1-aut/100);const feed=S.events.slice(0,9).map(e=>`<div class="fitem"><span class="t">${e.t}</span><span class="tag ${e.kind}">${e.type}</span><span class="msg">${e.msg}</span></div>`).join('');const busyAgents=Object.values(S.agents).filter(a=>a.busy);return pageHead('Cockpit','Realtidsöversikt av den autonoma ekonomin',simClock())+`<div class="grid g4" style="margin-bottom:14px"><div class="card kpi"><div class="lab">Autonom drift</div><div class="val">${aut.toFixed(1)}<small>%</small></div><div class="meta">${S.metrics.autoHandled} av ${S.metrics.totalHandled} hanterade utan människa</div></div><div class="card kpi"><div class="lab">Cash position</div><div class="val" style="font-size:25px">${fmt(S.cash)}<small> kr</small></div><div class="meta">${onBanks} datakällor · realtidssync</div></div><div class="card kpi"><div class="lab">Bokförda autonomt</div><div class="val">${booked}</div><div class="meta">${recovering>0?`<span style="color:var(--info)">${recovering} kvitton återhämtas nu</span>`:'inga öppna kvittoärenden'}</div></div><div class="card kpi"><div class="lab">I granskning</div><div class="val" style="${S.approvals.length?'color:var(--warn)':''}">${S.approvals.length}</div><div class="meta">human-in-the-loop kö</div></div></div><div class="grid g3" style="grid-template-columns:330px 1fr;align-items:start"><div class="card"><div class="hd"><h3>Autonomy split</h3></div><div class="bd"><div class="gauge-wrap"><div class="gauge"><svg width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="${R}" fill="none" stroke="var(--bg-2)" stroke-width="11"/><circle cx="64" cy="64" r="${R}" fill="none" stroke="var(--vw-blue)" stroke-width="11" stroke-linecap="butt" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" style="transition:stroke-dashoffset .6s"/></svg><div class="ctr"><div class="big">${aut.toFixed(0)}%</div><div class="lil">Autonom</div></div></div><div class="gauge-legend" style="flex:1"><div><span class="sw" style="background:var(--vw-blue)"></span>Autonomt hanterat<span class="n">${S.metrics.autoHandled}</span></div><div><span class="sw" style="background:var(--warn)"></span>Eskalerat till människa<span class="n">${S.metrics.escalations}</span></div><div><span class="sw" style="background:var(--bg-2)"></span>Mål: 95–99%<span class="n">↑</span></div></div></div></div></div><div class="card"><div class="hd"><h3>Live händelseström</h3><span class="micro" style="display:flex;gap:7px;align-items:center"><span class="live-dot"></span>${busyAgents.length} agenter aktiva</span></div><div class="feed">${feed||'<div class="empty">Inväntar events…</div>'}</div></div></div>`}
+function vLedger(){if(!S.txns.length)return pageHead('Transaktioner','Canonical ledger · event-sourced','')+`<div class="empty"><div class="big">Inga transaktioner ännu</div>Anslut en bank för att starta inflödet.</div>`;const rows=S.txns.slice(0,80).map(tx=>`<tr class="${S.selected===tx.id?'sel':''}" onclick="openTxn('${tx.id}')"><td class="mono" style="color:var(--ink-4);font-size:11px">${tx.id}</td><td><div class="merch"><div class="logo">${tx.merchant.ab}</div><div><div style="font-weight:500;color:var(--ink)">${tx.merchant.nm}</div><div style="font-size:10.5px;color:var(--ink-4)">${tx.display!==tx.merchant.nm?'⤷ '+tx.display+' · ':''}${tx.merchant.cat}</div></div></div></td><td style="color:var(--ink-3)">${tx.bank}</td><td class="r amt ${tx.sign>0?'pos':'neg'}">${tx.sign>0?'+':'−'}${money(tx.gross)}</td><td class="r" style="color:var(--ink-3)">${tx.vat?money(tx.vat):'—'}</td><td>${statusPill(tx)}</td><td class="r">${confBar(tx)}</td></tr>`).join('');return pageHead('Transaktioner','Canonical ledger · entity-resolved · klicka för audit lineage',`${S.txns.length} POSTER`)+`<div class="card scroll-x"><table><thead><tr><th>ID</th><th>Leverantör</th><th>Källa</th><th class="r">Belopp</th><th class="r">Moms</th><th>Status</th><th class="r">Confidence</th></tr></thead><tbody>${rows}</tbody></table></div>`}
+function vApprovals(){const items=S.approvals.map(id=>S.txns.find(t=>t.id===id)).filter(Boolean);if(!items.length)return pageHead('Granskning','Human-in-the-loop · endast edge cases når hit','TOM KÖ')+`<div class="empty"><div class="big">Kön är tom</div>Systemet hanterar 95%+ autonomt. Endast osäkra fall, fryst betalning eller misslyckad OCR eskaleras hit.<div style="margin-top:16px;font-size:12px">Testa <b>Observability → Injicera edge case</b> för att se eskalering.</div></div>`;const cards=items.map(tx=>{const reason=tx.held?'Fryst pga misstänkt avvikelse — vendor risk score hög.':tx.confidence<0.5?'OCR/underlag kunde inte verifieras autonomt efter retries.':`Confidence ${(tx.confidence*100).toFixed(1)}% ligger under auto-tröskeln (95%).`;const ev=tx.evidence.map(e=>`<div class="er"><span class="ck">${e.ok?'✓':'✕'}</span>${e.t}</div>`).join('');return `<div class="appr"><div class="top"><div class="logo" style="width:40px;height:40px;font-size:13px">${tx.merchant.ab}</div><div style="flex:1"><div style="font-weight:600;font-size:15px">${tx.merchant.nm} <span class="mono" style="font-size:12px;color:var(--ink-4)">${tx.id}</span></div><div style="font-size:12px;color:var(--ink-3)">${tx.bank} · ${tx.merchant.cat} · ${tx.display!==tx.merchant.nm?'rå: '+tx.display:''}</div></div><div style="text-align:right"><div class="mono" style="font-size:18px;font-weight:600">${tx.sign>0?'+':'−'}${money(tx.gross)}</div><div style="margin-top:4px">${confBar(tx)}</div></div></div><div class="why">⚠ ${reason}</div><div class="evidence" style="margin-bottom:14px">${ev}</div><div class="acts"><button class="btn primary" onclick="approve('${tx.id}')">Godkänn &amp; bokför</button><button class="btn ghost" onclick="openTxn('${tx.id}')">Se lineage</button><button class="btn danger" onclick="reject('${tx.id}')">Avvisa</button></div></div>`}).join('');return pageHead('Granskning','Human-in-the-loop · endast edge cases når hit',`${items.length} ÄRENDEN`)+`<div class="note">Människan granskar bara undantag. Allt annat — matchning, kvittoåterhämtning, moms, bokföring, audit — sker autonomt.</div>`+cards}
+function vAgents(){const cards=AGENTS.map(def=>{const a=S.agents[def.id];return `<div class="agent ${a.busy?'busy':''}"><div class="av" style="font-size:18px">${def.ico}</div><div style="flex:1"><div class="nm">${def.nm}<span class="stateled ${a.busy?'on':''}">${a.busy?'● Arbetar':'Vilande'}</span></div><div class="st">${def.desc}</div><div class="st" style="color:var(--info);font-style:italic">↳ ${a.last}</div><div class="stats"><div><span class="n">${a.done}</span><span class="l">Hanterade</span></div><div><span class="n">${a.busy?'1':'0'}</span><span class="l">Pågående</span></div></div></div></div>`}).join('');return pageHead('AI-agenter','Specialiserade finansiella agenter · deterministisk reasoning, inte chatbot','6 AGENTER')+`<div class="note">Varje agent kombinerar <b>Rules Engine + Policy Engine + ML + LLM-reasoning + Validation Layer</b>. AI får aldrig fabricera bokföring eller obalanserade ledger entries — varje beslut verifieras och får en confidence score.</div><div class="grid g2">${cards}</div>`}
+function vVat(){const total=S.vat.deductible;const rates=[25,12,6,0];const max=Math.max(1,...Object.values(S.vat.byRate));const rows=rates.map(r=>{const v=S.vat.byRate[r]||0;return `<div class="vatrate"><span class="rt">${r}%</span><div class="vatbar"><i style="width:${(v/max*100)}%"></i></div><span class="mono" style="width:120px;text-align:right;font-weight:600">${money(v)}</span></div>`}).join('');return pageHead('Moms &amp; skatt','VAT Agent · per jurisdiktion · verifierad mot regelverk','SE · eu-north-1')+`<div class="grid g3" style="margin-bottom:14px"><div class="card kpi"><div class="lab">Ingående moms (avdrag)</div><div class="val" style="font-size:24px">${fmt(total)}<small> kr</small></div><div class="meta">ackumulerat denna period</div></div><div class="card kpi"><div class="lab">Utgående moms</div><div class="val" style="font-size:24px">${fmt(S.vat.collected)}<small> kr</small></div><div class="meta">försäljning momsfri (B2B/EU)</div></div><div class="card kpi"><div class="lab">Jurisdiktion</div><div class="val" style="font-size:20px">SE 🇸🇪</div><div class="meta">jurisdiction engine aktiv</div></div></div><div class="card"><div class="hd"><h3>Momsrapport per sats</h3><span class="micro">auto-genererad</span></div><div class="bd">${rows}<div style="margin-top:14px;font-size:12px;color:var(--ink-3)">Compliance engine validerar varje sats mot retention laws &amp; filing rules. Rapporten byggs i realtid när transaktioner bokförs.</div></div></div>`}
+function vAudit(){const tx=S.selected?S.txns.find(t=>t.id===S.selected):S.txns.find(t=>t.status==='booked');const head=pageHead('Revision &amp; lineage','Immutable audit trail · data lineage · temporal accounting','SOC 2 · ISO 27001');if(!tx)return head+`<div class="empty"><div class="big">Ingen bokförd transaktion ännu</div>När en transaktion bokförs förseglas dess fullständiga lineage här.</div>`;const tl=[...tx.lineage].map(e=>`<div class="ev ${e.kind==='ai'?'aiv':''} ${e.kind==='ok'?'okv':''}"><div class="et">${e.type}</div><div class="em">${e.msg}</div><div class="ets">${e.t} · seq ${e.seq} · model gpt-fin-v3 · api v2.1</div></div>`).join('');return head+`<div class="note">Vi kan svara, år senare: varifrån kom datapunkten · vilken AI-modell · vilken API-version · vilken regel · vem godkände. <b>${tx.id}</b> visas nedan.</div><div class="grid g2" style="grid-template-columns:1fr 1.1fr;align-items:start"><div class="card"><div class="hd"><h3>Audit pack · ${tx.id}</h3><button class="btn ghost" style="padding:5px 12px;font-size:11px" onclick="exportAudit('${tx.id}')">Exportera</button></div><div class="bd"><div class="kv"><span class="k">Leverantör (canonical)</span><span class="v">${tx.merchant.nm}</span></div><div class="kv"><span class="k">Rå sträng</span><span class="v">${tx.display}</span></div><div class="kv"><span class="k">Källa</span><span class="v">${tx.bank}</span></div><div class="kv"><span class="k">Belopp (gross)</span><span class="v">${money(tx.gross)}</span></div><div class="kv"><span class="k">Moms ${(tx.vatRate*100)|0}%</span><span class="v">${money(tx.vat)}</span></div><div class="kv"><span class="k">Confidence</span><span class="v">${(tx.confidence*100).toFixed(1)}%</span></div><div class="kv"><span class="k">Status</span><span class="v">${tx.status}</span></div><div class="kv"><span class="k">Lineage events</span><span class="v">${tx.lineage.length}</span></div><div style="margin-top:14px"><span class="micro">Byt transaktion i Transaktioner →</span></div></div></div><div class="card"><div class="hd"><h3>Lineage timeline</h3><span class="micro">immutable</span></div><div class="bd"><div class="tl">${tl||'<div style="color:var(--ink-4)">Ingen lineage ännu</div>'}</div></div></div></div>`}
+function disconnect(id){delete S.conns[id];try{localStorage.setItem('reconciler.conns',JSON.stringify(S.conns))}catch(e){}render()}window.disconnect=disconnect;function vConnect(){const card=(c,kind)=>{const st=S.conns[c.id];const btn=st==='on'?`<button class="cbtn connected" onclick="disconnect('${c.id}')">✓ Ansluten</button>`:st==='connecting'?`<button class="cbtn connecting"><span class="spin"></span>Ansluter…</button>`:`<button class="cbtn" onclick="connect('${c.id}')">Anslut med ett klick</button>`;const protos=(c.protos||['REST','OAuth2']).map(p=>`<span class="proto">${p}</span>`).join('');return `<div class="conn ${st==='on'?'is-on':''}"><div class="row"><div class="logo" style="width:34px;height:34px;font-size:13px">${(c.nm[0]+(c.nm[1]||'')).toUpperCase()}</div><div><div class="nm">${c.nm}</div><div class="ty">${c.ty}</div></div></div><div class="protos">${protos}</div>${btn}</div>`};return pageHead('Anslutningar','Universellt integrationslager · provider abstraction · noll konfiguration','ONE-CLICK')+`<div class="note">Kunden kontaktar aldrig banken, skapar inga API-nycklar, förstår inga OAuth-scopes. Allt sker autonomt via connector orchestration → normaliserat till <b>canonical financial ontology</b>.</div><div class="micro" style="margin:6px 0 12px">Banking layer · PSD2 / Open Banking / ACH / SWIFT / SEPA</div><div class="conn-grid">${BANKS.map(b=>card(b,'bank')).join('')}</div><div class="micro" style="margin:26px 0 12px">ERP / Accounting layer · normaliserat ledger-språk</div><div class="conn-grid">${ERPS.map(e=>card(e,'erp')).join('')}</div>`}
+function vEvents(){const rows=S.events.slice(0,120).map(e=>`<div class="fitem"><span class="t">${e.t}</span><span class="tag ${e.kind}">${e.type}</span><span class="msg">${e.msg}</span>${e.txnId?`<span class="mono" style="font-size:10px;color:var(--ink-4)">${e.txnId}</span>`:''}</div>`).join('');return pageHead('Händelseström','Event-sourced · immutable log · replayable',`${fmt(evtSeq)} EVENTS`)+`<div class="note">Allt är events: <span class="mono" style="font-size:11px">TransactionDetected · ReceiptRecovered · VATCalculated · AuditTrailGenerated · FraudSuspected …</span> Kafka-stil append-only log möjliggör replay, rollback, state reconstruction och revisionsspår.</div><div style="margin-bottom:12px"><button class="btn ghost" onclick="replayDemo()">⟳ Replaya senaste 5 events</button></div><div class="card"><div class="feed" style="max-height:62vh">${rows||'<div class="empty">Inga events ännu</div>'}</div></div>`}
+function vSystem(){const onCount=Object.values(S.conns).filter(v=>v==='on').length;const totalConn=BANKS.length+ERPS.length;const meters=[['Event throughput',Math.min(100,evtSeq%100+(onCount*8)),false,(evtSeq)+' evt'],['Connector health',onCount?96:0,false,onCount+'/'+totalConn+' online'],['Ledger consistency',100,false,'in balans'],['OCR success rate',Math.max(40,100-S.metrics.ocrFail*6),S.metrics.ocrFail>3,(100-Math.min(60,S.metrics.ocrFail*6))+'%'],['Retry budget',Math.max(20,100-S.metrics.retries*4),S.metrics.retries>10,S.metrics.retries+' retries'],['p99 latency',88,false,'142ms']];const mh=meters.map(([nm,v,warn,vv])=>`<div class="meter"><span class="nm">${nm}</span><div class="track"><i class="${warn?'warn':''}" style="width:${v}%"></i></div><span class="vv">${vv}</span></div>`).join('');return pageHead('Observability','Distributed tracing · metrics · self-healing','REGION eu-north-1')+`<div class="grid g2" style="align-items:start"><div class="card"><div class="hd"><h3>Systemhälsa</h3><span class="micro" style="color:var(--pos)">● operationell</span></div><div class="bd">${mh}</div></div><div class="card"><div class="hd"><h3>Injicera edge case</h3><span class="micro">härda före launch</span></div><div class="bd"><div style="font-size:12px;color:var(--ink-3);margin-bottom:13px">Sandbox simulerar verkliga felscenarier. Se hur systemet läker sig självt och eskalerar rätt.</div><div class="chaos-grid"><button class="chaosbtn" onclick="injectChaos('dupe')"><div class="nm">Duplicerad payload</div><div class="ds">→ idempotency dedupe</div></button><button class="chaosbtn" onclick="injectChaos('corrupt')"><div class="nm">Korrupt PDF</div><div class="ds">→ OCR retry → eskalering</div></button><button class="chaosbtn" onclick="injectChaos('webhook')"><div class="nm">Fördröjd webhook</div><div class="ds">→ event reordering</div></button><button class="chaosbtn" onclick="injectChaos('outage')"><div class="nm">API-avbrott</div><div class="ds">→ circuit breaker + replay</div></button><button class="chaosbtn" onclick="injectChaos('fraud')" style="grid-column:span 2"><div class="nm">Misstänkt bedrägeri</div><div class="ds">→ frys betalning + eskalera till människa</div></button></div></div></div></div><div class="grid g4" style="margin-top:14px"><div class="card kpi"><div class="lab">Dubbletter kasserade</div><div class="val">${S.metrics.dupes}</div></div><div class="card kpi"><div class="lab">Retries</div><div class="val">${S.metrics.retries}</div></div><div class="card kpi"><div class="lab">OCR-fel</div><div class="val">${S.metrics.ocrFail}</div></div><div class="card kpi"><div class="lab">Eskaleringar</div><div class="val">${S.metrics.escalations}</div></div></div><div class="note" style="margin-top:14px;border-left-color:var(--ink-3)">Security: encryption everywhere · immutable audit logs · Vault/KMS/HSM · SAML/SSO · SCIM · multi-region redundancy. Kärnan byggd i <b>Rust</b> för determinism, concurrency- &amp; memory-safety.</div>`}
+const VIEWS={cockpit:vCockpit,ledger:vLedger,approvals:vApprovals,agents:vAgents,vat:vVat,audit:vAudit,connect:vConnect,events:vEvents,system:vSystem};
+function openTxn(id){const tx=S.txns.find(t=>t.id===id);if(!tx)return;S.selected=id;$('#dh-title').textContent=`${tx.merchant.nm} · ${tx.id}`;const ev=tx.evidence.map(e=>`<div class="er"><span class="ck" style="${e.ok?'':'color:var(--neg)'}">${e.ok?'✓':'✕'}</span>${e.t}</div>`).join('');const tl=[...tx.lineage].map(e=>`<div class="ev ${e.kind==='ai'?'aiv':''} ${e.kind==='ok'?'okv':''}"><div class="et">${e.type}</div><div class="em">${e.msg}</div><div class="ets">${e.t} · seq ${e.seq}</div></div>`).join('');$('#drawer-body').innerHTML=`<div class="dsec"><div style="display:flex;align-items:center;gap:14px;margin-bottom:14px"><div class="logo" style="width:46px;height:46px;font-size:15px">${tx.merchant.ab}</div><div><div style="font-size:22px;font-weight:600;font-family:var(--mono)">${tx.sign>0?'+':'−'}${money(tx.gross)}</div><div style="color:var(--ink-3);font-size:12px">${tx.merchant.cat} · ${tx.bank}</div></div><div style="margin-left:auto">${statusPill(tx)}</div></div>${tx.confidence?`<div style="display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--line);padding:12px 15px;border-radius:3px"><span class="micro">Confidence</span><div class="conf" style="flex:1;justify-content:flex-start"><span class="bar" style="width:120px"><i style="width:${(tx.confidence*100)}%"></i></span></div><span class="mono" style="font-size:18px;font-weight:600">${(tx.confidence*100).toFixed(1)}%</span></div>`:''}</div>${tx.evidence.length?`<div class="dsec"><span class="micro">Evidens · reasoning</span><div class="evidence">${ev}</div></div>`:''}<div class="dsec"><span class="micro">Data lineage · immutable timeline</span><div class="tl">${tl||'<div style="color:var(--ink-4)">Inväntar bearbetning…</div>'}</div></div>`;$('#drawer').classList.add('show');$('#drawer-bg').classList.add('show')}
+function closeDrawer(){$('#drawer').classList.remove('show');$('#drawer-bg').classList.remove('show')}
+function go(v){S.view=v;closeDrawer();paint()}
+function exportAudit(id){flash(`Audit pack ${id} exporterad (PDF + JSON lineage)`)}
+function replayDemo(){const last=S.events.slice(0,5).reverse();flash('Replayar 5 events från immutable log…');emit('ReplayInitiated',`Replay av ${last.length} events startad · deterministisk state reconstruction`,'ai');render()}
+$$('.navitem').forEach(n=>n.addEventListener('click',()=>go(n.dataset.view)));
+$('#drawer-x').addEventListener('click',closeDrawer);
+$('#drawer-bg').addEventListener('click',closeDrawer);
+$('#btn-pause').addEventListener('click',()=>{S.running=!S.running;$('#btn-pause').classList.toggle('paused',!S.running);$('#pause-lbl').textContent=S.running?'Live':'Pausad';$('#live').style.animationPlayState=S.running?'running':'paused';flash(S.running?'Simulering återupptagen':'Simulering pausad')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
+window.connect=connect;window.injectChaos=injectChaos;window.approve=approve;window.reject=reject;window.openTxn=openTxn;window.go=go;window.exportAudit=exportAudit;window.replayDemo=replayDemo;
+emit('SystemBoot','Reconciler kärna startad · Rust runtime · event store online · region eu-north-1','ok');
+emit('SandboxReady','Simulerad finansiell värld redo · fake banker, ERP, kvitton, moms & edge cases','ai');
+setTimeout(()=>{if(connectedBanks().length===0)connect('seb')},1200);
+setTimeout(()=>{if(connectedBanks().length<2)connect('fortnox')},4200);
+setInterval(step,1300);
+setInterval(()=>{if(S.dirty||true)paint()},600);
+paint();
+</script>
+
+<script>
+// ============================================================
+// ENTERPRISE MODULE A — Multi-Entity, Treasury, Financial Graph
+// ============================================================
+// MODULE A — Multi-Entity, Treasury, Financial Graph
+
+window.ENT = {
+  entities: [
+    {id:'landvex_se', nm:'LandveX AB', country:'SE', currency:'SEK', type:'operating'},
+    {id:'landvex_de', nm:'LandveX GmbH', country:'DE', currency:'EUR', type:'operating'},
+    {id:'landvex_us', nm:'LandveX Inc.', country:'US', currency:'USD', type:'operating'},
+    {id:'treasury_ch', nm:'LandveX Treasury SA', country:'CH', currency:'CHF', type:'treasury'},
+    {id:'holding', nm:'LandveX Group AB', country:'SE', currency:'SEK', type:'holding'},
+  ],
+  activeEntity: 'landvex_se',
+  consolidated: true,
+  cashByEntity: {landvex_se:1240000, landvex_de:880000, landvex_us:2100000, treasury_ch:14500000, holding:320000},
+  intercompany: [
+    {from:'holding', to:'landvex_se', amount:500000, type:'loan', rate:0.035},
+    {from:'treasury_ch', to:'landvex_de', amount:1200000, type:'cashpool', rate:0.02},
+    {from:'treasury_ch', to:'landvex_us', amount:1800000, type:'cashpool', rate:0.02},
+  ],
+  treasury: {
+    cashPositions: [
+      {bank:'Nordea', entity:'landvex_se', balance:620000, currency:'SEK', available:580000},
+      {bank:'Deutsche Bank', entity:'landvex_de', balance:440000, currency:'EUR', available:390000},
+      {bank:'JPMorgan', entity:'landvex_us', balance:1050000, currency:'USD', available:980000},
+      {bank:'UBS', entity:'treasury_ch', balance:7250000, currency:'CHF', available:7250000},
+      {bank:'SEB', entity:'landvex_se', balance:620000, currency:'SEK', available:600000},
+    ],
+    fxRates: {EUR:11.45, USD:10.52, CHF:11.89, GBP:13.21},
+    upcomingPayments: [
+      {desc:'AWS Invoice Q2', amount:180000, currency:'SEK', due:'2026-05-28', entity:'landvex_se', risk:'low'},
+      {desc:'Payroll EU', amount:340000, currency:'EUR', due:'2026-05-31', entity:'landvex_de', risk:'medium'},
+      {desc:'Tax Q2 US', amount:285000, currency:'USD', due:'2026-06-15', entity:'landvex_us', risk:'low'},
+      {desc:'Interco Repayment', amount:500000, currency:'CHF', due:'2026-06-30', entity:'treasury_ch', risk:'high'},
+    ],
+    runwayDays: {landvex_se:94, landvex_de:67, landvex_us:142, treasury_ch:999, holding:31}
+  },
+  graph: {
+    nodes: [
+      {id:'n1', type:'entity', label:'LandveX AB', sub:'SE · Operating'},
+      {id:'n2', type:'entity', label:'LandveX GmbH', sub:'DE · Operating'},
+      {id:'n3', type:'bank', label:'Nordea', sub:'PSD2 · SEK'},
+      {id:'n4', type:'bank', label:'Deutsche Bank', sub:'SWIFT · EUR'},
+      {id:'n5', type:'vendor', label:'Amazon Web Services', sub:'Cloud · 25% VAT'},
+      {id:'n6', type:'vendor', label:'Telia Sverige', sub:'Telecom · 25% VAT'},
+      {id:'n7', type:'erp', label:'Fortnox', sub:'ERP · SE'},
+      {id:'n8', type:'treasury', label:'LandveX Treasury SA', sub:'CH · CHF'},
+      {id:'n9', type:'vendor', label:'SJ AB', sub:'Travel · 6% VAT'},
+      {id:'n10', type:'entity', label:'LandveX Inc.', sub:'US · Operating'},
+    ],
+    edges: [
+      {from:'n1', to:'n3', label:'Primary account', weight:3},
+      {from:'n2', to:'n4', label:'Primary account', weight:3},
+      {from:'n1', to:'n5', label:'84 txns · 312k SEK', weight:2},
+      {from:'n1', to:'n6', label:'12 txns · 42k SEK', weight:1},
+      {from:'n1', to:'n7', label:'ERP sync', weight:2},
+      {from:'n8', to:'n1', label:'Cashpool', weight:3},
+      {from:'n8', to:'n2', label:'Cashpool', weight:3},
+      {from:'n8', to:'n10', label:'Cashpool', weight:3},
+      {from:'n1', to:'n9', label:'8 txns · 18k SEK', weight:1},
+    ]
+  },
+  selectedNode: null,
+  graphFilter: 'all',
+  _vendorRisk: null
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function _fmt(n, decimals) {
+  if (n === undefined || n === null) return '—';
+  decimals = decimals !== undefined ? decimals : 0;
+  return Number(n).toLocaleString('sv-SE', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+}
+
+function _countryFlag(code) {
+  const flags = {SE:'🇸🇪', DE:'🇩🇪', US:'🇺🇸', CH:'🇨🇭', GB:'🇬🇧'};
+  return (flags[code] || '🌐') + ' ' + code;
+}
+
+function _toSEK(amount, currency) {
+  if (currency === 'SEK') return amount;
+  const rate = ENT.treasury.fxRates[currency];
+  if (!rate) return amount;
+  return amount * rate;
+}
+
+function _typeBadge(type) {
+  const map = {
+    operating: ['OPERATING', '#1d6f4a'],
+    treasury:  ['TREASURY',  '#6b3fa0'],
+    holding:   ['HOLDING',   '#001e50'],
+  };
+  const [label, color] = map[type] || [type.toUpperCase(), '#888'];
+  return `<span style="font-size:9px;font-weight:700;letter-spacing:.07em;padding:2px 7px;border-radius:3px;background:${color};color:#fff;">${label}</span>`;
+}
+
+function _riskPill(risk) {
+  const map = {low:'#1d6f4a', medium:'#b8860b', high:'#c0392b'};
+  return `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;background:${map[risk]||'#888'};color:#fff;">${risk.toUpperCase()}</span>`;
+}
+
+function _statusPill(label, color) {
+  return `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;background:${color};color:#fff;">${label}</span>`;
+}
+
+// Seed vendor risk scores once
+function _getVendorRisk() {
+  if (ENT._vendorRisk) return ENT._vendorRisk;
+  const vendors = ENT.graph.nodes.filter(n => n.type === 'vendor');
+  ENT._vendorRisk = {};
+  const seeds = [0.72, 0.18, 0.45];
+  vendors.forEach((v, i) => { ENT._vendorRisk[v.id] = seeds[i] !== undefined ? seeds[i] : Math.round((0.1 + Math.random()*0.75)*100)/100; });
+  return ENT._vendorRisk;
+}
+
+// ─── GRAPH NODE POSITIONS (force-layout simulated with fixed positions) ─────
+
+function _graphPositions() {
+  return {
+    n8:  {x:450, y: 60},   // treasury centre top
+    n1:  {x:200, y:200},   // LandveX AB
+    n2:  {x:450, y:200},   // LandveX GmbH
+    n10: {x:700, y:200},   // LandveX Inc.
+    n3:  {x: 80, y:340},   // Nordea
+    n4:  {x:330, y:340},   // Deutsche Bank
+    n7:  {x:200, y:360},   // Fortnox
+    n5:  {x: 80, y:450},   // AWS
+    n6:  {x:220, y:460},   // Telia
+    n9:  {x:360, y:460},   // SJ AB
+  };
+}
+
+// ─── NODE COLORS ──────────────────────────────────────────────────────────────
+
+function _nodeColor(type) {
+  const map = {
+    entity:   'var(--vw-blue, #001e50)',
+    bank:     'var(--pos, #1d6f4a)',
+    vendor:   'var(--warn, #b8860b)',
+    erp:      'var(--info, #1565c0)',
+    treasury: '#6b3fa0',
+  };
+  return map[type] || '#555';
+}
+
+// ─── VIEW 1: vMultiEntity ─────────────────────────────────────────────────────
+
+window.vMultiEntity = function() {
+  const fakeRates = {SEK:1, EUR:11.45, USD:10.52, CHF:11.89};
+  const totalCash = Object.entries(ENT.cashByEntity).reduce((sum, [id, val]) => {
+    const ent = ENT.entities.find(e => e.id === id);
+    const rate = ent ? (fakeRates[ent.currency] || 1) : 1;
+    return sum + val * rate;
+  }, 0);
+  const icExposure = ENT.intercompany.reduce((s, ic) => s + ic.amount, 0);
+  const jurisdictions = [...new Set(ENT.entities.map(e => e.country))].length;
+
+  // Entity cards
+  const holdingEnt = ENT.entities.find(e => e.type === 'holding');
+  const operativeEnts = ENT.entities.filter(e => e.type === 'operating');
+  const treasuryEnt = ENT.entities.find(e => e.type === 'treasury');
+
+  function entityCard(e) {
+    const cash = ENT.cashByEntity[e.id] || 0;
+    const isActive = ENT.activeEntity === e.id;
+    const border = isActive ? '2px solid var(--vw-blue,#001e50)' : '1.5px solid #e5e5e5';
+    const shadow = isActive ? '0 0 0 3px rgba(0,30,80,.12)' : 'none';
+    return `<div onclick="selectEntity('${e.id}')" style="cursor:pointer;background:#fff;border:${border};border-radius:8px;padding:14px 16px;min-width:148px;box-shadow:${shadow};transition:box-shadow .2s;">
+      <div style="font-size:11px;color:#888;margin-bottom:4px;">${_countryFlag(e.country)}</div>
+      <div style="font-weight:700;font-size:13px;color:var(--vw-blue,#001e50);margin-bottom:4px;">${e.nm}</div>
+      <div style="font-size:12px;color:#555;margin-bottom:8px;">${e.currency}</div>
+      <div style="font-size:15px;font-weight:700;color:var(--vw-blue,#001e50);margin-bottom:8px;">${_fmt(cash)} ${e.currency}</div>
+      ${_typeBadge(e.type)}
+    </div>`;
+  }
+
+  // Intercompany rows
+  const icRows = ENT.intercompany.map(ic => {
+    const fromEnt = ENT.entities.find(e => e.id === ic.from);
+    const toEnt   = ENT.entities.find(e => e.id === ic.to);
+    return `<tr>
+      <td style="padding:7px 10px;font-size:12px;color:var(--vw-blue,#001e50);font-weight:600;">${fromEnt ? fromEnt.nm : ic.from}</td>
+      <td style="padding:7px 10px;font-size:12px;">${toEnt ? toEnt.nm : ic.to}</td>
+      <td style="padding:7px 10px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;">${_fmt(ic.amount)}</td>
+      <td style="padding:7px 10px;">${_statusPill(ic.type.toUpperCase(), ic.type==='loan'?'#001e50':'#1d6f4a')}</td>
+      <td style="padding:7px 10px;font-size:12px;text-align:right;">${(ic.rate*100).toFixed(2)}%</td>
+      <td style="padding:7px 10px;">${_statusPill('AKTIV','#1d6f4a')}</td>
+    </tr>`;
+  }).join('');
+
+  const kpis = [
+    {label:'Total Cash (SEK)', value: _fmt(Math.round(totalCash)) + ' kr', sub:'Konsoliderat'},
+    {label:'Intercompany Exposure', value: _fmt(icExposure), sub:`${ENT.intercompany.length} avtal`},
+    {label:'Aktiva Entiteter', value: ENT.entities.length, sub:'I systemet'},
+    {label:'Jurisdiktioner', value: jurisdictions, sub:'Länder'},
+  ];
+
+  const kpiCards = kpis.map(k => `
+    <div class="card kpi" style="flex:1;min-width:140px;background:#fff;border:1.5px solid #e5e5e5;border-radius:8px;padding:16px 18px;">
+      <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${k.label}</div>
+      <div style="font-size:22px;font-weight:800;color:var(--vw-blue,#001e50);">${k.value}</div>
+      <div style="font-size:11px;color:#aaa;margin-top:3px;">${k.sub}</div>
+    </div>`).join('');
+
+  return `
+<div style="font-family:inherit;">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+    <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--vw-blue,#001e50);">Koncernstruktur · Multi-Entity Finance</h2>
+    <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;background:var(--vw-blue,#001e50);color:#fff;letter-spacing:.08em;">5 ENTITETER</span>
+  </div>
+  <p style="margin:0 0 20px;font-size:12px;color:#666;">Global treasury orchestration — alla entities konsolideras i realtid via canonical financial ontology.</p>
+
+  <!-- KPI row -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">${kpiCards}</div>
+
+  <!-- Koncernkarta -->
+  <div style="background:#f7f8fa;border:1.5px solid #e5e5e5;border-radius:10px;padding:20px;margin-bottom:20px;">
+    <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px;">Koncernkarta</div>
+
+    <!-- Holding top -->
+    <div style="display:flex;justify-content:center;margin-bottom:0;">
+      ${entityCard(holdingEnt)}
+    </div>
+
+    <!-- Connector line from holding down -->
+    <div style="display:flex;justify-content:center;">
+      <div style="width:2px;height:20px;background:#ccc;"></div>
+    </div>
+
+    <!-- Horizontal connector bar -->
+    <div style="display:flex;justify-content:center;">
+      <div style="height:2px;width:72%;background:#ccc;"></div>
+    </div>
+
+    <!-- Tick lines to each child -->
+    <div style="display:flex;justify-content:space-around;width:72%;margin:0 auto;">
+      ${[...operativeEnts, treasuryEnt].map(() => `<div style="width:2px;height:16px;background:#ccc;"></div>`).join('')}
+    </div>
+
+    <!-- Operative + Treasury row -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+      ${[...operativeEnts, treasuryEnt].map(e => entityCard(e)).join('')}
+    </div>
+  </div>
+
+  <!-- Intercompany panel -->
+  <div style="background:#fff;border:1.5px solid #e5e5e5;border-radius:10px;padding:20px;">
+    <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;">Intercompany Transaktioner</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:2px solid #e5e5e5;">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Från</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Till</th>
+            <th style="padding:8px 10px;text-align:right;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Belopp</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Typ</th>
+            <th style="padding:8px 10px;text-align:right;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Ränta</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${icRows}</tbody>
+      </table>
+    </div>
+  </div>
+</div>`;
+};
+
+// ─── VIEW 2: vTreasury ────────────────────────────────────────────────────────
+
+window.vTreasury = function() {
+  const fx = ENT.treasury.fxRates;
+  const positions = ENT.treasury.cashPositions;
+  const payments = ENT.treasury.upcomingPayments;
+  const runway = ENT.treasury.runwayDays;
+
+  // Totals
+  const totalSEK = positions.reduce((s, p) => s + _toSEK(p.balance, p.currency), 0);
+  const fxExposure = positions.filter(p => p.currency !== 'SEK').reduce((s, p) => s + _toSEK(p.balance, p.currency), 0);
+  const liabilities30d = payments.filter(p => {
+    const due = new Date(p.due);
+    const now = new Date('2026-05-23');
+    const diff = (due - now) / 86400000;
+    return diff <= 30;
+  }).reduce((s, p) => s + _toSEK(p.amount, p.currency), 0);
+  const minRunway = Math.min(...Object.values(runway));
+  const minRunwayEntity = Object.entries(runway).find(([, v]) => v === minRunway);
+  const minRunwayName = ENT.entities.find(e => e.id === (minRunwayEntity || ['',0])[0]);
+
+  const kpis = [
+    {label:'Total Global Cash', value: _fmt(Math.round(totalSEK)) + ' kr', sub:'SEK-ekv. konsoliderat', color:'var(--vw-blue,#001e50)'},
+    {label:'FX Exposure', value: _fmt(Math.round(fxExposure)) + ' kr', sub:'Ej SEK', color:'#6b3fa0'},
+    {label:'Utfall 30 dagar', value: _fmt(Math.round(liabilities30d)) + ' kr', sub:'Kommande betalningar', color:'#b8860b'},
+    {label:'Min Runway', value: minRunway >= 999 ? '∞' : minRunway + 'd', sub: minRunwayName ? minRunwayName.nm : '—', color: minRunway < 60 ? '#c0392b' : minRunway < 90 ? '#b8860b' : '#1d6f4a'},
+  ];
+
+  const kpiCards = kpis.map(k => `
+    <div class="card kpi" style="flex:1;min-width:140px;background:#fff;border:1.5px solid #e5e5e5;border-radius:8px;padding:16px 18px;">
+      <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${k.label}</div>
+      <div style="font-size:20px;font-weight:800;color:${k.color};">${k.value}</div>
+      <div style="font-size:11px;color:#aaa;margin-top:3px;">${k.sub}</div>
+    </div>`).join('');
+
+  // Cash position table
+  const posRows = positions.map(p => {
+    const sekEq = _toSEK(p.balance, p.currency);
+    const utilPct = p.balance > 0 ? Math.round(p.available / p.balance * 100) : 0;
+    const statusColor = utilPct >= 90 ? '#1d6f4a' : utilPct >= 70 ? '#b8860b' : '#c0392b';
+    const ent = ENT.entities.find(e => e.id === p.entity);
+    return `<tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px 10px;font-size:12px;font-weight:600;color:var(--vw-blue,#001e50);">${p.bank}</td>
+      <td style="padding:8px 10px;font-size:12px;color:#555;">${ent ? ent.nm : p.entity}</td>
+      <td style="padding:8px 10px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;">${_fmt(p.balance)}</td>
+      <td style="padding:8px 10px;font-size:12px;text-align:center;">${p.currency}</td>
+      <td style="padding:8px 10px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--vw-blue,#001e50);">${_fmt(Math.round(sekEq))} kr</td>
+      <td style="padding:8px 10px;font-size:12px;text-align:right;">${_fmt(p.available)}</td>
+      <td style="padding:8px 10px;">${_statusPill(utilPct+'% TILLG.', statusColor)}</td>
+    </tr>`;
+  }).join('');
+
+  // Upcoming payments table
+  const payRows = payments.map(p => {
+    const ent = ENT.entities.find(e => e.id === p.entity);
+    return `<tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px 10px;font-size:12px;font-weight:600;color:var(--vw-blue,#001e50);">${p.desc}</td>
+      <td style="padding:8px 10px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;">${_fmt(p.amount)} ${p.currency}</td>
+      <td style="padding:8px 10px;font-size:12px;color:#555;">${ent ? ent.nm : p.entity}</td>
+      <td style="padding:8px 10px;font-size:12px;color:#555;">${p.due}</td>
+      <td style="padding:8px 10px;">${_riskPill(p.risk)}</td>
+    </tr>`;
+  }).join('');
+
+  // Runway bars
+  const runwayBars = Object.entries(runway).map(([id, days]) => {
+    const ent = ENT.entities.find(e => e.id === id);
+    const pct = Math.min(days / 365 * 100, 100);
+    const barColor = days < 60 ? '#c0392b' : days < 90 ? '#b8860b' : '#1d6f4a';
+    const label = days >= 999 ? '∞' : days + 'd';
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+        <span style="font-size:11px;font-weight:600;color:var(--vw-blue,#001e50);">${ent ? ent.nm : id}</span>
+        <span style="font-size:11px;font-weight:700;color:${barColor};">${label}</span>
+      </div>
+      <div style="background:#f0f0f0;border-radius:3px;height:8px;overflow:hidden;">
+        <div style="width:${pct.toFixed(1)}%;height:100%;background:${barColor};border-radius:3px;transition:width .4s;"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // FX Dashboard
+  const fxCards = Object.entries(fx).map(([ccy, rate]) => {
+    const pip = ((Math.random() - 0.5) * 0.04).toFixed(3);
+    const positive = parseFloat(pip) >= 0;
+    return `<div style="background:#fff;border:1.5px solid #e5e5e5;border-radius:8px;padding:12px 14px;min-width:100px;">
+      <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:4px;">${ccy}/SEK</div>
+      <div style="font-size:18px;font-weight:800;color:var(--vw-blue,#001e50);">${rate.toFixed(2)}</div>
+      <div style="font-size:11px;color:${positive?'#1d6f4a':'#c0392b'};font-weight:600;margin-top:3px;">${positive?'▲':'▼'} ${Math.abs(parseFloat(pip)).toFixed(3)}</div>
+    </div>`;
+  }).join('');
+
+  return `
+<div style="font-family:inherit;">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+    <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--vw-blue,#001e50);">Global Treasury Intelligence</h2>
+    <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1d6f4a;color:#fff;letter-spacing:.08em;animation:pulse 2s infinite;">REALTIME</span>
+  </div>
+
+  <!-- KPIs -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">${kpiCards}</div>
+
+  <!-- Cash Positions -->
+  <div style="background:#fff;border:1.5px solid #e5e5e5;border-radius:10px;padding:20px;margin-bottom:20px;">
+    <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;">Cash Positions</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:2px solid #e5e5e5;">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Bank</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Entitet</th>
+            <th style="padding:8px 10px;text-align:right;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Saldo</th>
+            <th style="padding:8px 10px;text-align:center;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Valuta</th>
+            <th style="padding:8px 10px;text-align:right;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">SEK-ekv.</th>
+            <th style="padding:8px 10px;text-align:right;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Available</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${posRows}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Upcoming Payments -->
+  <div style="background:#fff;border:1.5px solid #e5e5e5;border-radius:10px;padding:20px;margin-bottom:20px;">
+    <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;">Kommande Betalningar</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:2px solid #e5e5e5;">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Beskrivning</th>
+            <th style="padding:8px 10px;text-align:right;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Belopp</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Entitet</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Förfaller</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Risk</th>
+          </tr>
+        </thead>
+        <tbody>${payRows}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bottom row: Runway + FX -->
+  <div style="display:flex;gap:20px;flex-wrap:wrap;">
+    <!-- Runway -->
+    <div style="flex:1;min-width:280px;background:#fff;border:1.5px solid #e5e5e5;border-radius:10px;padding:20px;">
+      <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;">Runway per Entitet</div>
+      ${runwayBars}
+    </div>
+    <!-- FX -->
+    <div style="min-width:260px;background:#fff;border:1.5px solid #e5e5e5;border-radius:10px;padding:20px;">
+      <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;">FX Dashboard</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">${fxCards}</div>
+    </div>
+  </div>
+</div>`;
+};
+
+// ─── VIEW 3: vFinancialGraph ───────────────────────────────────────────────────
+
+window.vFinancialGraph = function() {
+  const nodes = ENT.graph.nodes;
+  const edges = ENT.graph.edges;
+  const pos   = _graphPositions();
+  const filter = ENT.graphFilter || 'all';
+  const selectedId = ENT.selectedNode;
+
+  // Build SVG
+  const svgW = 900, svgH = 500;
+
+  function nodeVisible(n) {
+    if (filter === 'all') return true;
+    if (filter === 'entities') return n.type === 'entity';
+    if (filter === 'banks')    return n.type === 'bank';
+    if (filter === 'vendors')  return n.type === 'vendor';
+    return true;
+  }
+
+  const visibleIds = new Set(nodes.filter(nodeVisible).map(n => n.id));
+
+  const edgeSVG = edges.map(e => {
+    if (!visibleIds.has(e.from) || !visibleIds.has(e.to)) return '';
+    const f = pos[e.from], t = pos[e.to];
+    if (!f || !t) return '';
+    return `<line x1="${f.x}" y1="${f.y}" x2="${t.x}" y2="${t.y}"
+      stroke="#aaa" stroke-width="${e.weight}" stroke-opacity="0.4"
+      marker-end="url(#arr)"/>`;
+  }).join('');
+
+  const nodeSVG = nodes.map(n => {
+    if (!visibleIds.has(n.id)) return '';
+    const p = pos[n.id];
+    if (!p) return '';
+    const col = _nodeColor(n.type);
+    const isSelected = selectedId === n.id;
+    const r = isSelected ? 22 : 18;
+    const strokeW = isSelected ? 3 : 0;
+    const shortLabel = n.label.length > 14 ? n.label.slice(0, 13) + '…' : n.label;
+    return `<g class="graph-node" onclick="selectGraphNode('${n.id}')" style="cursor:pointer;">
+      <circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${col}" stroke="#fff" stroke-width="${strokeW}" opacity="0.92"/>
+      <text x="${p.x}" y="${p.y + r + 13}" text-anchor="middle" font-size="10" font-family="inherit" font-weight="700" fill="var(--vw-blue,#001e50)">${shortLabel}</text>
+      <text x="${p.x}" y="${p.y + r + 24}" text-anchor="middle" font-size="9" font-family="inherit" fill="#888">${n.sub}</text>
+    </g>`;
+  }).join('');
+
+  const svgEl = `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" height="${svgH}" style="background:#f7f8fa;border-radius:10px;border:1.5px solid #e5e5e5;display:block;">
+    <defs>
+      <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#aaa"/>
+      </marker>
+      <style>
+        .graph-node circle { transition: r .15s, opacity .15s; }
+        .graph-node:hover circle { opacity: 1; r: 22; }
+      </style>
+    </defs>
+    ${edgeSVG}
+    ${nodeSVG}
+  </svg>`;
+
+  // Node detail sidebar
+  let detailPanel = '';
+  if (selectedId) {
+    const selNode = nodes.find(n => n.id === selectedId);
+    const relEdges = edges.filter(e => e.from === selectedId || e.to === selectedId);
+    const relNodes = relEdges.map(e => {
+      const otherId = e.from === selectedId ? e.to : e.from;
+      const dir = e.from === selectedId ? '→' : '←';
+      const other = nodes.find(n => n.id === otherId);
+      return `<div style="padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:11px;color:#555;">${dir} <b style="color:var(--vw-blue,#001e50);">${other ? other.label : otherId}</b> — ${e.label}</div>`;
+    }).join('');
+    detailPanel = `<div style="min-width:220px;max-width:260px;background:#fff;border:1.5px solid #e5e5e5;border-radius:10px;padding:16px;">
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Noddetaljer</div>
+      <div style="font-size:15px;font-weight:800;color:var(--vw-blue,#001e50);margin-bottom:3px;">${selNode ? selNode.label : selectedId}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px;">${selNode ? selNode.sub : ''}</div>
+      ${_typeBadge(selNode ? selNode.type : 'entity')}
+      <div style="margin-top:12px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Relationer (${relEdges.length})</div>
+      ${relNodes || '<div style="font-size:11px;color:#aaa;">Inga relationer</div>'}
+    </div>`;
+  }
+
+  // Filter buttons
+  const filterBtns = ['all','entities','banks','vendors'].map(f => {
+    const labels = {all:'ALLA', entities:'ENTITIES', banks:'BANKS', vendors:'VENDORS'};
+    const active = filter === f;
+    return `<button onclick="ENT.graphFilter='${f}';if(window.render)render();"
+      style="padding:5px 12px;border-radius:4px;border:1.5px solid ${active?'var(--vw-blue,#001e50)':'#e5e5e5'};background:${active?'var(--vw-blue,#001e50)':'#fff'};color:${active?'#fff':'#555'};font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.06em;">${labels[f]}</button>`;
+  }).join('');
+
+  // Vendor risk table
+  const vendorRisk = _getVendorRisk();
+  const vendors = nodes.filter(n => n.type === 'vendor');
+  const vendorRows = vendors.map(v => {
+    const risk = vendorRisk[v.id] || 0;
+    const relCount = edges.filter(e => e.from === v.id || e.to === v.id).length;
+    const volEdge = edges.find(e => (e.from === v.id || e.to === v.id) && e.label.includes('txns'));
+    const vol = volEdge ? volEdge.label : '—';
+    const riskLabel = risk < 0.3 ? 'LOW' : risk < 0.6 ? 'MEDIUM' : 'HIGH';
+    const riskColor = risk < 0.3 ? '#1d6f4a' : risk < 0.6 ? '#b8860b' : '#c0392b';
+    return `<tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px 10px;font-size:12px;font-weight:600;color:var(--vw-blue,#001e50);">${v.label}</td>
+      <td style="padding:8px 10px;font-size:12px;text-align:center;">${relCount}</td>
+      <td style="padding:8px 10px;font-size:12px;color:#555;">${vol}</td>
+      <td style="padding:8px 10px;text-align:right;font-size:12px;font-weight:700;color:${riskColor};">${risk.toFixed(2)}</td>
+      <td style="padding:8px 10px;">${_statusPill(riskLabel, riskColor)}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+<div style="font-family:inherit;">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+    <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--vw-blue,#001e50);">Financial Graph · Relationskartan</h2>
+    <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;background:#6b3fa0;color:#fff;letter-spacing:.08em;">BETA</span>
+  </div>
+
+  <!-- Filter buttons -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;">${filterBtns}</div>
+
+  <!-- Graph + detail panel -->
+  <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:20px;">
+    <div style="flex:1;min-width:0;">${svgEl}</div>
+    ${detailPanel}
+  </div>
+
+  <!-- Vendor Risk table -->
+  <div style="background:#fff;border:1.5px solid #e5e5e5;border-radius:10px;padding:20px;">
+    <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;">Vendor Risk Intelligence</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:2px solid #e5e5e5;">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Vendor</th>
+            <th style="padding:8px 10px;text-align:center;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Relationer</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Total Vol</th>
+            <th style="padding:8px 10px;text-align:right;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Risk Score</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${vendorRows}</tbody>
+      </table>
+    </div>
+  </div>
+</div>`;
+};
+
+// ─── SIMULERINGSLOGIK ─────────────────────────────────────────────────────────
+
+window.treasuryTick = function() {
+  // Fluktrera cash positions med ±0.5%
+  Object.keys(ENT.cashByEntity).forEach(k => {
+    ENT.cashByEntity[k] *= (1 + (Math.random()-0.5)*0.01);
+    ENT.cashByEntity[k] = Math.round(ENT.cashByEntity[k]);
+  });
+  // FX rates drift
+  ['EUR','USD','CHF','GBP'].forEach(c => {
+    ENT.treasury.fxRates[c] *= (1 + (Math.random()-0.5)*0.004);
+    ENT.treasury.fxRates[c] = Math.round(ENT.treasury.fxRates[c]*100)/100;
+  });
+};
+
+window.selectEntity = function(id) {
+  ENT.activeEntity = id;
+  const e = ENT.entities.find(x => x.id === id);
+  if (e && window.flash) flash('Aktiv entitet: ' + e.nm);
+  if (window.render) render();
+};
+
+window.selectGraphNode = function(id) {
+  ENT.selectedNode = id;
+  if (window.render) render();
+};
+
+// END MODULE A
+
+</script>
+<script>
+// ============================================================
+// ENTERPRISE MODULE B — Approval Engine, AI Gov, Global Infra
+// ============================================================
+// MODULE B — Approval Engine, AI Governance, Global Infra
+
+window.APPR = {
+  policies: [
+    {id:'p1', nm:'Auto-approve', range:'0–10,000 SEK', condition:'confidence > 0.95', action:'AUTO_BOOK', color:'pos'},
+    {id:'p2', nm:'Finance Manager', range:'10,000–100,000 SEK', condition:'confidence > 0.80', action:'SINGLE_APPROVER', color:'info'},
+    {id:'p3', nm:'Treasury Approval', range:'100,000–1,000,000 SEK', condition:'any', action:'DUAL_APPROVER', color:'warn'},
+    {id:'p4', nm:'CFO + Legal', range:'>1,000,000 SEK', condition:'any', action:'EXECUTIVE_BOARD', color:'neg'},
+    {id:'p5', nm:'Cross-border Legal', range:'any FX transaction', condition:'currency != SEK', action:'COMPLIANCE_REVIEW', color:'ai'},
+  ],
+  queue: [
+    {id:'AQ-001', txId:'TX-1042', merchant:'Amazon Web Services', amount:18500, currency:'SEK', policy:'p2', stage:'Finance Manager', approvers:['Anna Lindström'], status:'pending', created:'08:12:44', escalatesAt:'10:12:44'},
+    {id:'AQ-002', txId:'TX-1038', merchant:'WeWork Sthlm', amount:142000, currency:'SEK', policy:'p3', stage:'Treasury Approval', approvers:['Johan Svensson','CFO'], status:'pending', created:'07:44:21', escalatesAt:'09:44:21'},
+    {id:'AQ-003', txId:'TX-1031', merchant:'JPMorgan FX Settlement', amount:285000, currency:'USD', policy:'p5', stage:'Compliance Review', approvers:['Legal Dept'], status:'in_review', created:'06:30:00', escalatesAt:'12:30:00'},
+  ],
+  history: [
+    {id:'AQ-000', merchant:'Telia Sverige AB', amount:3190, approved:true, by:'Auto-approve', time:'05:22'},
+    {id:'AQ-998', merchant:'SJ AB', amount:1840, approved:true, by:'Auto-approve', time:'04:11'},
+    {id:'AQ-997', merchant:'Scaleway SAS', amount:8800, approved:false, by:'Anna Lindström', time:'03:45', reason:'Budget exceeded'},
+  ]
+};
+
+window.AIGov = {
+  models: [
+    {id:'fin-v3', nm:'Financial Classification Model', version:'3.2.1', provider:'Internal', status:'active', accuracy:0.974, decisions:8421, overrides:127},
+    {id:'ocr-v2', nm:'Document Intelligence', version:'2.8.0', provider:'AWS Textract + internal', status:'active', accuracy:0.961, decisions:3204, overrides:44},
+    {id:'entity-v1', nm:'Entity Resolution Engine', version:'1.9.4', provider:'Internal', status:'active', accuracy:0.988, decisions:12840, overrides:18},
+    {id:'fraud-v2', nm:'Fraud Detection Model', version:'2.1.0', provider:'Internal', status:'active', accuracy:0.993, decisions:8421, overrides:3},
+    {id:'vat-v3', nm:'VAT Classification Engine', version:'3.0.2', provider:'Internal + Skatteverket API', status:'active', accuracy:0.999, decisions:8421, overrides:2},
+  ],
+  recentDecisions: [
+    {id:'D-8421', model:'fin-v3', input:'Stripe Payments 84,000 SEK', output:'Revenue · 0% VAT', confidence:0.994, correct:true, ts:'08:14:22'},
+    {id:'D-8420', model:'entity-v1', input:'"ICA MAXI 0234"', output:'ICA Sverige AB · 556014-2751', confidence:0.991, correct:true, ts:'08:14:18'},
+    {id:'D-8419', model:'ocr-v2', input:'PDF · WeWork invoice', output:'Hyra · 25% VAT · 14,000 SEK', confidence:0.887, correct:null, ts:'08:14:01'},
+    {id:'D-8418', model:'fraud-v2', input:'TX-1041 · 3,190 SEK · Telia', output:'PASS · risk 0.08', confidence:0.997, correct:true, ts:'08:13:55'},
+    {id:'D-8417', model:'fin-v3', input:'Unknown vendor 8,750 SEK', output:'REVIEW · low confidence', confidence:0.621, correct:null, ts:'08:13:44'},
+  ],
+  policies: [
+    {rule:'AI aldrig skriver i ledger utan validation layer', status:'enforced'},
+    {rule:'Confidence < 0.85 → escalate till människa', status:'enforced'},
+    {rule:'Irreversible actions kräver human approval', status:'enforced'},
+    {rule:'Model rollback tillgänglig inom 24h', status:'enforced'},
+    {rule:'Alla AI-beslut loggas med model version + API version', status:'enforced'},
+  ]
+};
+
+window.Infra = {
+  regions: [
+    {id:'eu-north-1', nm:'EU North (Stockholm)', status:'operational', latency:12, events:8421, dataResidency:'EU GDPR', primary:true},
+    {id:'eu-west-1', nm:'EU West (Frankfurt)', status:'operational', latency:18, events:4201, dataResidency:'EU GDPR', primary:false},
+    {id:'us-east-1', nm:'US East (Virginia)', status:'operational', latency:142, events:2104, dataResidency:'US SOC2', primary:false},
+    {id:'ap-southeast-1', nm:'AP Southeast (Singapore)', status:'degraded', latency:284, events:842, dataResidency:'APAC', primary:false},
+  ],
+  security: [
+    {layer:'Transport', tech:'TLS 1.3 + mTLS', status:'active'},
+    {layer:'Secrets', tech:'HashiCorp Vault + HSM', status:'active'},
+    {layer:'Keys', tech:'AWS KMS + customer-managed', status:'active'},
+    {layer:'Identity', tech:'SAML 2.0 + SCIM + SSO', status:'active'},
+    {layer:'Network', tech:'Zero-trust · Tailscale mesh', status:'active'},
+    {layer:'Audit', tech:'Immutable append-only S3 + hash chain', status:'active'},
+  ],
+  certifications: [
+    {nm:'SOC 2 Type II', status:'audit_in_progress', expected:'2026-Q3'},
+    {nm:'ISO 27001', status:'planning', expected:'2026-Q4'},
+    {nm:'GDPR Art. 32', status:'compliant', expected:null},
+    {nm:'PCI DSS Level 2', status:'roadmap', expected:'2027-Q1'},
+  ],
+  connectorHealth: [
+    {nm:'Nordea PSD2', uptime:99.94, latency:84, lastCheck:'08:14'},
+    {nm:'Fortnox API', uptime:99.87, latency:112, lastCheck:'08:14'},
+    {nm:'Revolut Business', uptime:99.99, latency:67, lastCheck:'08:14'},
+    {nm:'VIES VAT API', uptime:98.41, latency:340, lastCheck:'08:14'},
+  ]
+};
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function _fmt(n, cur) {
+  return new Intl.NumberFormat('sv-SE', {minimumFractionDigits:0, maximumFractionDigits:0}).format(n) + ' ' + (cur||'SEK');
+}
+
+function _pct(v) {
+  return (v * 100).toFixed(1) + '%';
+}
+
+function _confBar(v, width) {
+  const pct = Math.round(v * 100);
+  const color = v >= 0.95 ? 'var(--pos)' : v >= 0.85 ? 'var(--warn)' : 'var(--neg)';
+  return `<div style="display:flex;align-items:center;gap:6px">
+    <div style="flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;min-width:${width||60}px">
+      <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width .3s"></div>
+    </div>
+    <span style="font-size:11px;color:var(--dim);min-width:38px">${pct}%</span>
+  </div>`;
+}
+
+function _pill(label, color, small) {
+  const map = {pos:'var(--pos)',neg:'var(--neg)',warn:'var(--warn)',info:'var(--info)',ai:'var(--ai)',dim:'var(--dim)'};
+  const c = map[color] || color || 'var(--dim)';
+  const fs = small ? '10px' : '11px';
+  const px = small ? '6px' : '8px';
+  const py = small ? '2px' : '3px';
+  return `<span style="display:inline-block;padding:${py} ${px};background:${c}22;color:${c};border:1px solid ${c}55;border-radius:4px;font-size:${fs};font-weight:600;letter-spacing:.04em;white-space:nowrap">${label}</span>`;
+}
+
+function _avatar(name) {
+  const initials = name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--vw-blue);border:2px solid var(--border);color:#fff;font-size:11px;font-weight:700;flex-shrink:0" title="${name}">${initials}</span>`;
+}
+
+function _statusDot(status) {
+  const map = {operational:'var(--pos)', degraded:'var(--warn)', down:'var(--neg)'};
+  return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${map[status]||'var(--dim)'};box-shadow:0 0 6px ${map[status]||'var(--dim)'}66;flex-shrink:0"></span>`;
+}
+
+function _card(content, extra) {
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;${extra||''}">${content}</div>`;
+}
+
+function _sectionHead(title, sub) {
+  return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <span style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.06em">${title}</span>
+    ${sub ? `<span style="font-size:11px;color:var(--dim)">${sub}</span>` : ''}
+  </div>`;
+}
+
+function _table(heads, rows, opts) {
+  opts = opts||{};
+  const thStyle = `padding:8px 10px;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);white-space:nowrap;text-align:left`;
+  const trStyle = `border-bottom:1px solid rgba(255,255,255,.04)`;
+  const tdStyle = `padding:9px 10px;font-size:12px;color:var(--text);vertical-align:middle`;
+  const ths = heads.map(h=>`<th style="${thStyle}">${h}</th>`).join('');
+  const trs = rows.map((cells, ri)=>{
+    const tds = cells.map(c=>`<td style="${tdStyle}">${c}</td>`).join('');
+    const hover = opts.hover ? `onmouseenter="this.style.background='rgba(255,255,255,.03)'" onmouseleave="this.style.background=''"` : '';
+    const click = opts.onClick ? `onclick="${opts.onClick}(${ri})" style="cursor:pointer"` : '';
+    return `<tr style="${trStyle}" ${hover} ${click}>${tds}</tr>`;
+  }).join('');
+  return `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
+    <thead><tr>${ths}</tr></thead>
+    <tbody>${trs}</tbody>
+  </table></div>`;
+}
+
+function _escalateCountdown(escalatesAt) {
+  const now = new Date();
+  const [h,m,s] = escalatesAt.split(':').map(Number);
+  const esc = new Date(); esc.setHours(h,m,s||0,0);
+  const diff = Math.floor((esc - now) / 1000 / 60);
+  if (diff < 0) return `<span style="color:var(--neg);font-weight:700;font-size:11px">⚠ ESKALERAT</span>`;
+  if (diff < 60) return `<span style="color:var(--neg);font-weight:700;font-size:11px">⏰ ${diff} min</span>`;
+  const hrs = Math.floor(diff/60), mins = diff%60;
+  return `<span style="color:var(--dim);font-size:11px">${hrs}h ${mins}m</span>`;
+}
+
+function _flash(el) {
+  if (!el) return;
+  el.style.transition = 'background .15s';
+  el.style.background = 'rgba(29,111,74,.25)';
+  setTimeout(()=>{ el.style.background = ''; }, 600);
+}
+
+function _emit(type, detail, color) {
+  const c = color || 'info';
+  const map = {pos:'var(--pos)',neg:'var(--neg)',warn:'var(--warn)',info:'var(--info)',ai:'var(--ai)'};
+  const ev = new CustomEvent('recon:event', {detail:{type, detail, color: map[c]||map.info}});
+  document.dispatchEvent(ev);
+  // fallback toast
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid ${map[c]||map.info};border-radius:8px;padding:12px 18px;font-size:12px;color:var(--text);z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,.5);max-width:320px;animation:fadeIn .2s`;
+  toast.innerHTML = `<span style="color:${map[c]||map.info};font-weight:700">${type}</span> <span style="color:var(--dim)">${detail}</span>`;
+  document.body.appendChild(toast);
+  setTimeout(()=>{ toast.style.opacity='0'; toast.style.transition='opacity .4s'; setTimeout(()=>toast.remove(),400); }, 3200);
+}
+
+// ── MODULE B.1 — vApprovalEngine ─────────────────────────────────────────────
+
+window.approveEnterprise = function(id) {
+  const idx = window.APPR.queue.findIndex(q=>q.id===id);
+  if (idx === -1) return;
+  const item = window.APPR.queue[idx];
+  window.APPR.queue.splice(idx, 1);
+  window.APPR.history.unshift({
+    id: item.id,
+    merchant: item.merchant,
+    amount: item.amount,
+    approved: true,
+    by: item.approvers[0] || 'Manual',
+    time: new Date().toTimeString().slice(0,5)
+  });
+  _emit('APPROVED', `${item.id} · ${item.merchant} · ${_fmt(item.amount, item.currency)}`, 'pos');
+  const card = document.getElementById('appr-card-'+id);
+  if (card) {
+    _flash(card);
+    setTimeout(()=>{ card.style.opacity='0'; card.style.transition='opacity .4s,max-height .4s'; card.style.maxHeight='0'; card.style.overflow='hidden'; setTimeout(()=>card.remove(),450); },200);
+  }
+  const badge = document.getElementById('appr-queue-badge');
+  if (badge) badge.textContent = window.APPR.queue.length;
+  _refreshApprHistory();
+};
+
+window.rejectEnterprise = function(id) {
+  const idx = window.APPR.queue.findIndex(q=>q.id===id);
+  if (idx === -1) return;
+  const item = window.APPR.queue[idx];
+  window.APPR.queue.splice(idx, 1);
+  window.APPR.history.unshift({
+    id: item.id,
+    merchant: item.merchant,
+    amount: item.amount,
+    approved: false,
+    by: 'Manual Reject',
+    time: new Date().toTimeString().slice(0,5),
+    reason: 'Rejected via UI'
+  });
+  _emit('REJECTED', `${item.id} · ${item.merchant}`, 'neg');
+  const card = document.getElementById('appr-card-'+id);
+  if (card) {
+    card.style.border = '1px solid var(--neg)';
+    setTimeout(()=>{ card.style.opacity='0'; card.style.transition='opacity .4s'; setTimeout(()=>card.remove(),450); },300);
+  }
+  const badge = document.getElementById('appr-queue-badge');
+  if (badge) badge.textContent = window.APPR.queue.length;
+  _refreshApprHistory();
+};
+
+function _refreshApprHistory() {
+  const el = document.getElementById('appr-history-body');
+  if (!el) return;
+  el.innerHTML = window.APPR.history.map(h=>{
+    const dec = h.approved
+      ? `<span style="color:var(--pos);font-weight:700">✓ GODKÄND</span>`
+      : `<span style="color:var(--neg);font-weight:700">✕ AVVISAD</span>`;
+    const reason = h.reason ? ` <span style="color:var(--dim);font-size:10px">(${h.reason})</span>` : '';
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+      <td style="padding:7px 10px;font-size:11px;color:var(--dim)">${h.id}</td>
+      <td style="padding:7px 10px;font-size:12px">${h.merchant}</td>
+      <td style="padding:7px 10px;font-size:12px;text-align:right;white-space:nowrap">${_fmt(h.amount)}</td>
+      <td style="padding:7px 10px">${dec}${reason}</td>
+      <td style="padding:7px 10px;font-size:11px;color:var(--dim)">${h.by}</td>
+      <td style="padding:7px 10px;font-size:11px;color:var(--dim)">${h.time}</td>
+    </tr>`;
+  }).join('');
+}
+
+function _apprPolicyColor(p) {
+  const map = {pos:'var(--pos)',info:'var(--info)',warn:'var(--warn)',neg:'var(--neg)',ai:'var(--ai)'};
+  return map[p.color]||'var(--dim)';
+}
+
+window.vApprovalEngine = function() {
+  const appr = window.APPR;
+
+  // Policy matrix rows
+  const policyRows = appr.policies.map((p, i)=>{
+    const c = _apprPolicyColor(p);
+    const lvl = `<span style="color:${c};font-weight:700;font-size:12px">${i+1}</span>`;
+    const nm = `<span style="font-size:12px;font-weight:600">${p.nm}</span>`;
+    const range = `<span style="font-size:11px;color:var(--dim)">${p.range}</span>`;
+    const cond = `<code style="font-size:10px;background:rgba(255,255,255,.07);padding:2px 6px;border-radius:3px;color:var(--ai)">${p.condition}</code>`;
+    const act = `<code style="font-size:10px;background:rgba(255,255,255,.05);padding:2px 6px;border-radius:3px;color:var(--text)">${p.action}</code>`;
+    const pill = _pill('ACTIVE','pos',true);
+    return [lvl, nm, range, cond, act, pill];
+  });
+
+  // Queue cards
+  const queueCards = appr.queue.map(q=>{
+    const policy = appr.policies.find(p=>p.id===q.policy);
+    const pColor = policy ? _apprPolicyColor(policy) : 'var(--dim)';
+    const statusC = q.status==='in_review' ? 'var(--ai)' : 'var(--warn)';
+    const statusL = q.status==='in_review' ? 'IN REVIEW' : 'PENDING';
+    const avatars = q.approvers.map(a=>_avatar(a)).join(' ');
+    const countdown = _escalateCountdown(q.escalatesAt);
+    return `<div id="appr-card-${q.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .3s">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:700;color:var(--text)">${q.id}</span>
+            <span style="font-size:11px;color:var(--dim)">${q.txId}</span>
+          </div>
+          <div style="font-size:15px;font-weight:600;color:var(--text)">${q.merchant}</div>
+          <div style="font-size:20px;font-weight:700;color:var(--info);margin-top:2px">${_fmt(q.amount, q.currency)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span style="display:inline-block;padding:3px 8px;background:${pColor}22;color:${pColor};border:1px solid ${pColor}55;border-radius:4px;font-size:10px;font-weight:700">${q.stage.toUpperCase()}</span>
+          <span style="display:inline-block;padding:3px 8px;background:${statusC}22;color:${statusC};border:1px solid ${statusC}55;border-radius:4px;font-size:10px;font-weight:700">${statusL}</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--dim)">Approvers:</span>
+          <div style="display:flex;gap:4px">${avatars}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;color:var(--dim)">Eskalerar:</span>
+          ${countdown}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="window.approveEnterprise('${q.id}')" style="padding:7px 14px;background:var(--pos);color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">✓ Approve</button>
+        <button onclick="_emit('DELEGATE','${q.id} delegated','info')" style="padding:7px 14px;background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .2s" onmouseenter="this.style.opacity='.7'" onmouseleave="this.style.opacity='1'">⇢ Delegate</button>
+        <button onclick="window.rejectEnterprise('${q.id}')" style="padding:7px 14px;background:rgba(255,255,255,.05);color:var(--neg);border:1px solid var(--neg)55;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .2s" onmouseenter="this.style.opacity='.7'" onmouseleave="this.style.opacity='1'">✕ Reject</button>
+        <button onclick="_emit('LINEAGE','Viewing lineage for ${q.id}','ai')" style="padding:7px 14px;background:rgba(255,255,255,.05);color:var(--ai);border:1px solid var(--ai)55;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .2s" onmouseenter="this.style.opacity='.7'" onmouseleave="this.style.opacity='1'">⬡ View Lineage</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // History rows
+  const histRows = appr.history.map(h=>{
+    const dec = h.approved
+      ? `<span style="color:var(--pos);font-weight:700">✓ GODKÄND</span>`
+      : `<span style="color:var(--neg);font-weight:700">✕ AVVISAD</span>`;
+    const reason = h.reason ? ` <span style="color:var(--dim);font-size:10px">(${h.reason})</span>` : '';
+    return [`<span style="color:var(--dim)">${h.id}</span>`, h.merchant, `<span style="text-align:right;display:block">${_fmt(h.amount)}</span>`, `${dec}${reason}`, `<span style="color:var(--dim)">${h.by}</span>`, `<span style="color:var(--dim)">${h.time}</span>`];
+  });
+
+  return `<div style="display:flex;flex-direction:column;gap:24px">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div>
+        <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0 0 4px">Approval Orchestration Engine</h2>
+        <p style="font-size:13px;color:var(--dim);margin:0">Policy-driven multi-tier approval workflows · Real-time queue management</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:6px;background:var(--warn)22;border:1px solid var(--warn)55;border-radius:8px;padding:8px 14px">
+          <span style="color:var(--warn);font-size:18px;font-weight:800" id="appr-queue-badge">${appr.queue.length}</span>
+          <span style="color:var(--warn);font-size:11px;font-weight:600">IN QUEUE</span>
+        </div>
+        ${_pill('ENTERPRISE','ai')}
+      </div>
+    </div>
+
+    <!-- Policy Matrix -->
+    ${_card(`
+      ${_sectionHead('Policy Matrix', '5 approval tiers · auto-evaluated')}
+      ${_table(
+        ['Lvl','Policy','Beloppsintervall','Villkor','Action','Status'],
+        policyRows
+      )}
+    `)}
+
+    <!-- Active Queue -->
+    <div>
+      ${_sectionHead('Active Queue', `${appr.queue.length} pending approval${appr.queue.length!==1?'s':''}`)}
+      <div style="display:flex;flex-direction:column;gap:12px">
+        ${queueCards || '<div style="color:var(--dim);font-size:13px;text-align:center;padding:32px">Queue empty</div>'}
+      </div>
+    </div>
+
+    <!-- Approval History -->
+    ${_card(`
+      ${_sectionHead('Approval History', 'Recent decisions')}
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          ${['ID','Merchant','Belopp','Beslut','Av','Tid'].map(h=>`<th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}
+        </tr></thead>
+        <tbody id="appr-history-body">
+          ${appr.history.map(h=>{
+            const dec = h.approved
+              ? `<span style="color:var(--pos);font-weight:700">✓ GODKÄND</span>`
+              : `<span style="color:var(--neg);font-weight:700">✕ AVVISAD</span>`;
+            const reason = h.reason ? ` <span style="color:var(--dim);font-size:10px">(${h.reason})</span>` : '';
+            return `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+              <td style="padding:7px 10px;font-size:11px;color:var(--dim)">${h.id}</td>
+              <td style="padding:7px 10px;font-size:12px">${h.merchant}</td>
+              <td style="padding:7px 10px;font-size:12px;text-align:right;white-space:nowrap">${_fmt(h.amount)}</td>
+              <td style="padding:7px 10px">${dec}${reason}</td>
+              <td style="padding:7px 10px;font-size:11px;color:var(--dim)">${h.by}</td>
+              <td style="padding:7px 10px;font-size:11px;color:var(--dim)">${h.time}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `)}
+  </div>`;
+};
+
+// ── MODULE B.2 — vAIGovernance ───────────────────────────────────────────────
+
+window.expandDecision = function(id) {
+  const el = document.getElementById('ai-decision-expand-'+id);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  // close all
+  document.querySelectorAll('[id^="ai-decision-expand-"]').forEach(e=>{ e.style.display='none'; });
+  document.querySelectorAll('[id^="ai-decision-row-"]').forEach(r=>{ r.style.background=''; });
+  if (!isOpen) {
+    el.style.display = 'block';
+    const row = document.getElementById('ai-decision-row-'+id);
+    if (row) row.style.background = 'rgba(126,87,194,.08)';
+  }
+};
+
+window.vAIGovernance = function() {
+  const gov = window.AIGov;
+  const totalDecisions = gov.models.reduce((a,m)=>a+m.decisions,0);
+  const totalOverrides = gov.models.reduce((a,m)=>a+m.overrides,0);
+  const overrideRate = ((totalOverrides/totalDecisions)*100).toFixed(1);
+
+  // Model registry rows
+  const modelRows = gov.models.map(m=>{
+    const acc = _confBar(m.accuracy, 80);
+    const status = _pill('ACTIVE','pos',true);
+    return [
+      `<span style="font-size:12px;font-weight:600;color:var(--text)">${m.nm}</span>`,
+      `<code style="font-size:11px;color:var(--dim);background:rgba(255,255,255,.06);padding:2px 6px;border-radius:3px">${m.version}</code>`,
+      `<span style="font-size:11px;color:var(--dim)">${m.provider}</span>`,
+      acc,
+      `<span style="font-size:12px;font-weight:600;color:var(--info)">${m.decisions.toLocaleString()}</span>`,
+      `<span style="font-size:12px;color:${m.overrides>100?'var(--warn)':'var(--dim)'}">${m.overrides}</span>`,
+      status
+    ];
+  });
+
+  // Recent decisions rows (with expandable)
+  const decisionRows = gov.recentDecisions.map(d=>{
+    const corr = d.correct===true
+      ? `<span style="color:var(--pos);font-size:14px">✓</span>`
+      : d.correct===false
+        ? `<span style="color:var(--neg);font-size:14px">✕</span>`
+        : `<span style="color:var(--dim);font-size:14px">?</span>`;
+    const chainHtml = `<div id="ai-decision-expand-${d.id}" style="display:none;margin-top:8px;padding:10px;background:rgba(126,87,194,.08);border-radius:6px;border-left:3px solid var(--ai)">
+      <div style="font-size:11px;font-weight:700;color:var(--ai);margin-bottom:8px">REASONING CHAIN · ${d.id}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${['Input normalized','Feature extraction','Model inference','Validation layer','Decision sealed'].map((step,i)=>
+          `<div style="display:flex;align-items:center;gap:8px;font-size:11px">
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--vw-blue);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">${i+1}</span>
+            <span style="color:var(--text)">${step}</span>
+            <span style="color:var(--pos);margin-left:auto">✓</span>
+          </div>`
+        ).join('')}
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--dim)">Model: <span style="color:var(--ai)">${d.model}</span> · Confidence: <span style="color:var(--pos)">${(d.confidence*100).toFixed(1)}%</span> · Timestamp: <span>${d.ts}</span></div>
+    </div>`;
+    return `<tr id="ai-decision-row-${d.id}" style="border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s" onclick="window.expandDecision('${d.id}')" onmouseenter="this.style.background='rgba(255,255,255,.025)'" onmouseleave="this.style.background=this.id.replace('ai-decision-row-','')===window._expandedDec?'rgba(126,87,194,.08)':''">
+      <td style="padding:9px 10px;font-size:11px;color:var(--dim);white-space:nowrap">${d.id}</td>
+      <td style="padding:9px 10px"><code style="font-size:11px;background:rgba(255,255,255,.07);padding:2px 6px;border-radius:3px;color:var(--ai)">${d.model}</code></td>
+      <td style="padding:9px 10px;font-size:12px;color:var(--dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.input}">${d.input}</td>
+      <td style="padding:9px 10px;font-size:12px;color:var(--text)">${d.output}</td>
+      <td style="padding:9px 10px;min-width:120px">${_confBar(d.confidence,80)}</td>
+      <td style="padding:9px 10px;text-align:center">${corr}</td>
+    </tr>
+    <tr><td colspan="6" style="padding:0 10px;background:transparent">${chainHtml}</td></tr>`;
+  }).join('');
+
+  return `<div style="display:flex;flex-direction:column;gap:24px">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div>
+        <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0 0 4px">AI Governance · Model Intelligence</h2>
+        <p style="font-size:13px;color:var(--dim);margin:0">Explainability layer · Human oversight · Audit-grade decision logging</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${_pill('SOC 2','info')}
+        ${_pill('ISO 27001','info')}
+        ${_pill('GDPR Art.32','pos')}
+      </div>
+    </div>
+
+    <!-- Model Registry -->
+    ${_card(`
+      ${_sectionHead('Model Registry', `${gov.models.length} active models · ${totalDecisions.toLocaleString()} total decisions today`)}
+      ${_table(
+        ['Modell','Version','Provider','Accuracy','Beslut idag','Overrides','Status'],
+        modelRows
+      )}
+    `)}
+
+    <!-- Recent Decisions Feed -->
+    ${_card(`
+      ${_sectionHead('Recent Decisions', 'Klicka rad för reasoning chain')}
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            ${['Decision-ID','Modell','Input','Output','Confidence','Korrekt'].map(h=>`<th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}
+          </tr></thead>
+          <tbody>${decisionRows}</tbody>
+        </table>
+      </div>
+    `)}
+
+    <!-- AI Policy Engine -->
+    ${_card(`
+      ${_sectionHead('AI Policy Engine', 'Runtime governance constraints')}
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${gov.policies.map(p=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,.03);border-radius:6px;border:1px solid rgba(255,255,255,.06)">
+            <span style="font-size:12px;color:var(--text)">${p.rule}</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:var(--pos)22;color:var(--pos);border:1px solid var(--pos)55;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:16px">✓ ENFORCED</span>
+          </div>
+        `).join('')}
+      </div>
+    `)}
+
+    <!-- Override Analysis -->
+    <div style="background:linear-gradient(135deg,rgba(29,111,74,.12),rgba(0,30,80,.18));border:1px solid var(--pos)44;border-radius:8px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Override Analysis</div>
+        <div style="font-size:14px;color:var(--text)">${totalOverrides} overrides av ${totalDecisions.toLocaleString()} beslut = <span style="color:var(--pos);font-weight:700">${overrideRate}% override rate</span></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--pos)">✓ Inom acceptabla gränser</div>
+        <div style="font-size:11px;color:var(--dim)">Threshold: &lt; 5.0%</div>
+      </div>
+    </div>
+  </div>`;
+};
+
+// ── MODULE B.3 — vGlobalInfra ────────────────────────────────────────────────
+
+window.vGlobalInfra = function() {
+  const inf = window.Infra;
+  const primary = inf.regions.find(r=>r.primary);
+
+  // Region cards
+  const regionCards = inf.regions.map(r=>{
+    const isDeg = r.status === 'degraded';
+    const isDown = r.status === 'down';
+    const borderC = isDeg ? 'var(--warn)' : isDown ? 'var(--neg)' : 'var(--border)';
+    const statusLabel = isDeg ? `<span style="color:var(--warn);font-weight:700;font-size:11px">⚠ DEGRADED</span>`
+      : isDown ? `<span style="color:var(--neg);font-weight:700;font-size:11px">✕ DOWN</span>`
+      : `<span style="color:var(--pos);font-size:11px;font-weight:600">OPERATIONAL</span>`;
+    const drColor = r.dataResidency.includes('GDPR') ? 'var(--info)' : r.dataResidency.includes('SOC') ? 'var(--ai)' : 'var(--dim)';
+    return `<div style="background:var(--surface);border:1px solid ${borderC};border-radius:8px;padding:16px;position:relative;${isDeg?'box-shadow:0 0 12px var(--warn)22':''}">
+      ${r.primary ? `<span style="position:absolute;top:10px;right:10px;padding:2px 8px;background:var(--info)22;color:var(--info);border:1px solid var(--info)55;border-radius:4px;font-size:10px;font-weight:700">PRIMARY</span>` : ''}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        ${_statusDot(r.status)}
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${r.nm}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:11px;color:var(--dim)">Latency</span>
+          <span style="font-size:12px;font-weight:600;color:${r.latency<50?'var(--pos)':r.latency<200?'var(--warn)':'var(--neg)'}">${r.latency} ms</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:11px;color:var(--dim)">Events/dag</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text)">${r.events.toLocaleString()}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--dim)">Data residency</span>
+          <span style="padding:2px 7px;background:${drColor}22;color:${drColor};border:1px solid ${drColor}55;border-radius:4px;font-size:10px;font-weight:700">${r.dataResidency}</span>
+        </div>
+      </div>
+      <div style="padding-top:10px;border-top:1px solid var(--border)">${statusLabel}</div>
+      ${isDeg ? `<div style="margin-top:6px;font-size:11px;color:var(--warn)">⚠ Elevated latency detected · Auto-failover armed</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Security rows
+  const secRows = inf.security.map(s=>[
+    `<span style="font-size:12px;font-weight:600">${s.layer}</span>`,
+    `<code style="font-size:11px;background:rgba(255,255,255,.07);padding:2px 6px;border-radius:3px;color:var(--text)">${s.tech}</code>`,
+    _pill('ACTIVE','pos',true)
+  ]);
+
+  // Cert status helper
+  function _certPill(status) {
+    if (status === 'compliant') return _pill('COMPLIANT','pos');
+    if (status === 'audit_in_progress') return _pill('AUDIT IN PROGRESS','info');
+    if (status === 'planning') return _pill('PLANNING','dim');
+    if (status === 'roadmap') return _pill('ROADMAP','dim');
+    return _pill(status.toUpperCase(),'dim');
+  }
+
+  const certCards = inf.certifications.map(c=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">${c.nm}</div>
+        ${c.expected ? `<div style="font-size:11px;color:var(--dim)">ETA: ${c.expected}</div>` : '<div style="font-size:11px;color:var(--pos)">Compliant</div>'}
+      </div>
+      ${_certPill(c.status)}
+    </div>
+  `).join('');
+
+  // Connector rows
+  const connRows = inf.connectorHealth.map(c=>{
+    const uptimeC = c.uptime < 99 ? 'var(--neg)' : c.uptime < 99.9 ? 'var(--warn)' : 'var(--pos)';
+    const latC = c.latency > 300 ? 'var(--warn)' : 'var(--text)';
+    return [
+      `<span style="font-size:12px;font-weight:600">${c.nm}</span>`,
+      `<span style="font-size:12px;font-weight:700;color:${uptimeC}">${c.uptime}%</span>`,
+      `<span style="font-size:12px;color:${latC}">${c.latency} ms</span>`,
+      `<span style="font-size:11px;color:var(--dim)">${c.lastCheck}</span>`
+    ];
+  });
+
+  return `<div style="display:flex;flex-direction:column;gap:24px">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div>
+        <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0 0 4px">Global Infrastructure · Data Residency</h2>
+        <p style="font-size:13px;color:var(--dim);margin:0">Multi-region deployment · Zero-trust security · Compliance-ready</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="padding:6px 12px;background:var(--info)22;color:var(--info);border:1px solid var(--info)55;border-radius:6px;font-size:11px;font-weight:700">REGION ${primary ? primary.id.toUpperCase() : 'eu-north-1'} · PRIMARY</span>
+        ${_statusDot('operational')}
+      </div>
+    </div>
+
+    <!-- Region Grid -->
+    <div>
+      ${_sectionHead('Region Status', `${inf.regions.length} regions · ${inf.regions.filter(r=>r.status==='operational').length} operational`)}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+        ${regionCards}
+      </div>
+    </div>
+
+    <!-- Security Layers -->
+    ${_card(`
+      ${_sectionHead('Security Layers', 'Defence-in-depth architecture')}
+      ${_table(['Layer','Teknologi','Status'], secRows)}
+    `)}
+
+    <!-- Certifications -->
+    <div>
+      ${_sectionHead('Certifications & Compliance', '4 frameworks')}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+        ${certCards}
+      </div>
+    </div>
+
+    <!-- Connector Health -->
+    ${_card(`
+      ${_sectionHead('Connector Health', 'External API integrations')}
+      ${_table(['Connector','Uptime','Latency','Last Check'], connRows)}
+    `)}
+
+    <!-- Chaos Engineering -->
+    ${_card(`
+      ${_sectionHead('Chaos Engineering', 'Controlled failure injection · Test resilience')}
+      <p style="font-size:12px;color:var(--dim);margin:0 0 14px">Simulera feltillstånd i kontrollerad miljö. Alla åtgärder loggas i audit trail.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button onclick="_emit('CHAOS','Region failover simulerad: eu-north-1 → eu-west-1','warn');this.style.background='var(--warn)';setTimeout(()=>this.style.background='',800)" 
+          style="padding:10px 18px;background:rgba(255,255,255,.07);color:var(--warn);border:1px solid var(--warn)55;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s"
+          onmouseenter="this.style.background='var(--warn)22'" onmouseleave="this.style.background='rgba(255,255,255,.07)'">
+          ⚡ Simulera region failover
+        </button>
+        <button onclick="_emit('CHAOS','Network partition injected: ap-southeast-1 isolated','warn')"
+          style="padding:10px 18px;background:rgba(255,255,255,.07);color:var(--neg);border:1px solid var(--neg)55;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s"
+          onmouseenter="this.style.background='var(--neg)22'" onmouseleave="this.style.background='rgba(255,255,255,.07)'">
+          ✂ Inject network partition
+        </button>
+        <button onclick="_emit('CHAOS','Backup restore test initiated · ETA 4min','pos');this.style.background='var(--pos)';setTimeout(()=>this.style.background='',900)"
+          style="padding:10px 18px;background:rgba(255,255,255,.07);color:var(--pos);border:1px solid var(--pos)55;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s"
+          onmouseenter="this.style.background='var(--pos)22'" onmouseleave="this.style.background='rgba(255,255,255,.07)'">
+          ♻ Test backup restore
+        </button>
+      </div>
+    `)}
+  </div>`;
+};
+
+// END MODULE B
+
+</script>
+<script>
+// ============================================================
+// ENTERPRISE GLUE — Integration layer
+// ============================================================
+// MODULE GLUE — Enterprise integration layer
+
+const ENTERPRISE_CSS = `
+/* Enterprise extensions */
+.entity-chip { display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;padding:4px 10px;border-radius:2px;font-size:11px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--mono) }
+.entity-chip:hover { background:rgba(255,255,255,.20) }
+.entity-chip .flag { font-size:13px }
+.entity-selector { display:flex;align-items:center;gap:6px;margin-right:8px }
+.entity-selector .lbl { font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);font-weight:600 }
+.interco { border:1px solid var(--line);border-radius:var(--radius);padding:12px 15px;margin-bottom:10px;background:var(--surface);font-size:12.5px }
+.interco .row { display:flex;align-items:center;justify-content:space-between;gap:12px }
+.entity-card { border:1px solid var(--line);border-radius:var(--radius);padding:14px;background:var(--surface);box-shadow:var(--shadow);cursor:pointer;transition:.15s }
+.entity-card:hover { box-shadow:var(--shadow-2);transform:translateY(-1px) }
+.entity-card.active { border-color:var(--vw-blue);background:var(--info-bg) }
+.entity-card .flag { font-size:22px;margin-bottom:8px }
+.entity-card .enm { font-weight:600;font-size:14px }
+.entity-card .ety { font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4);font-weight:600;margin-top:2px }
+.entity-card .ecash { font-family:var(--mono);font-size:18px;font-weight:600;margin-top:10px }
+.graph-svg { width:100%;max-height:480px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius) }
+.graph-node { cursor:pointer }
+.graph-node circle { transition:.15s }
+.graph-node:hover circle { filter:brightness(1.2) }
+.graph-node text { font-family:var(--sans);pointer-events:none }
+.aq-card { border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:16px;margin-bottom:12px;box-shadow:var(--shadow) }
+.aq-card .aq-top { display:flex;align-items:flex-start;gap:12px;margin-bottom:12px }
+.aq-amount { font-family:var(--mono);font-size:20px;font-weight:600 }
+.approver-avatar { width:30px;height:30px;border-radius:50%;background:var(--vw-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0 }
+.escalation-timer { font-family:var(--mono);font-size:11px;font-weight:600;color:var(--neg) }
+.region-card { border:1px solid var(--line);border-radius:var(--radius);padding:14px;background:var(--surface);box-shadow:var(--shadow) }
+.region-card .r-status { display:flex;align-items:center;gap:7px;margin-bottom:8px }
+.region-card .r-nm { font-weight:600;font-size:13px }
+.region-card .r-stats { display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--ink-3) }
+.region-card .r-stats span { font-family:var(--mono);font-weight:600;color:var(--ink) }
+.model-row { display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--surface-2);font-size:12px }
+.model-row .mname { flex:1;font-weight:500 }
+.model-row .mversion { font-family:var(--mono);font-size:10px;color:var(--ink-4) }
+.decision-row { display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--surface-2);font-size:11.5px;cursor:pointer;transition:.1s }
+.decision-row:hover { background:var(--surface-2) }
+.runway-bar { display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--surface-2) }
+.runway-bar .r-entity { width:150px;font-size:12.5px }
+.runway-bar .r-track { flex:1;height:8px;background:var(--bg-2);border-radius:4px;overflow:hidden }
+.runway-bar .r-track i { display:block;height:100%;border-radius:4px;transition:width .4s }
+.runway-bar .r-days { font-family:var(--mono);font-size:12px;font-weight:600;width:80px;text-align:right }
+.cert-card { border:1px solid var(--line);border-radius:var(--radius);padding:13px;background:var(--surface);text-align:center }
+.cert-card .c-nm { font-weight:600;font-size:12px;margin-bottom:6px }
+.tag.ai { background:#ece9f5;color:#4b3b80 }
+`;
+
+function injectEnterpriseCSS() {
+  const style = document.createElement('style');
+  style.textContent = ENTERPRISE_CSS;
+  document.head.appendChild(style);
+}
+
+function injectEntitySelector() {
+  const tctrl = document.querySelector('.tctrl');
+  if (!tctrl || document.querySelector('.entity-selector')) return;
+  const flags = {landvex_se:'🇸🇪', landvex_de:'🇩🇪', landvex_us:'🇺🇸', treasury_ch:'🇨🇭', holding:'🏛️'};
+  const sel = document.createElement('div');
+  sel.className = 'entity-selector';
+  sel.innerHTML = `<span class="lbl">Entity</span>`;
+
+  function updateChip() {
+    const e = (window.ENT?.entities || []).find(x => x.id === (window.ENT?.activeEntity || 'landvex_se'));
+    const existing = sel.querySelector('.entity-chip');
+    const chip = document.createElement('button');
+    chip.className = 'entity-chip';
+    chip.innerHTML = `<span class="flag">${flags[e?.id] || '🏢'}</span>${e?.nm || 'LandveX AB'}`;
+    chip.onclick = () => window.go && window.go('multiEntity');
+    if (existing) sel.replaceChild(chip, existing);
+    else sel.appendChild(chip);
+  }
+  updateChip();
+  setInterval(updateChip, 2000);
+
+  const liveDot = tctrl.querySelector('.live-dot');
+  if (liveDot) tctrl.insertBefore(sel, liveDot);
+  else tctrl.prepend(sel);
+}
+
+function injectEnterpriseNav() {
+  const nav = document.querySelector('.nav');
+  if (!nav || document.querySelector('[data-view="multiEntity"]')) return;
+
+  const grp = document.createElement('div');
+  grp.className = 'grp';
+  grp.textContent = 'Enterprise';
+
+  const items = [
+    {view:'multiEntity',    ico:'⊞', label:'Multi-Entity',    badge:null},
+    {view:'treasury',       ico:'≋', label:'Treasury Intel',  badge:null},
+    {view:'graph',          ico:'◎', label:'Financial Graph', badge:null},
+    {view:'approvalEngine', ico:'⊛', label:'Approval Engine', badge:'aq', alert:true},
+    {view:'aiGov',          ico:'◈', label:'AI Governance',   badge:null},
+    {view:'globalInfra',    ico:'⊟', label:'Global Infra',    badge:null},
+  ];
+
+  const infraGrp = Array.from(nav.querySelectorAll('.grp')).find(g => g.textContent.includes('Infrastructure'));
+  if (infraGrp) {
+    nav.insertBefore(grp, infraGrp);
+    items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'navitem';
+      btn.dataset.view = item.view;
+      const badgeHtml = item.badge ? `<span class="badge${item.alert ? ' alert' : ''}" id="nb-${item.badge}">0</span>` : '';
+      btn.innerHTML = `<span class="ico">${item.ico}</span>${item.label}${badgeHtml}`;
+      btn.addEventListener('click', () => window.go && window.go(item.view));
+      nav.insertBefore(btn, infraGrp);
+    });
+  }
+}
+
+function registerEnterpriseViews() {
+  if (!window.VIEWS) { setTimeout(registerEnterpriseViews, 100); return; }
+
+  window.VIEWS.multiEntity = function() {
+    return (window.vMultiEntity || (() => '<div class="empty"><div class="big">Laddar Multi-Entity...</div></div>'))();
+  };
+  window.VIEWS.treasury = function() {
+    return (window.vTreasury || (() => '<div class="empty"><div class="big">Laddar Treasury...</div></div>'))();
+  };
+  window.VIEWS.graph = function() {
+    return (window.vFinancialGraph || (() => '<div class="empty"><div class="big">Laddar Financial Graph...</div></div>'))();
+  };
+  window.VIEWS.approvalEngine = function() {
+    return (window.vApprovalEngine || (() => '<div class="empty"><div class="big">Laddar Approval Engine...</div></div>'))();
+  };
+  window.VIEWS.aiGov = function() {
+    return (window.vAIGovernance || (() => '<div class="empty"><div class="big">Laddar AI Governance...</div></div>'))();
+  };
+  window.VIEWS.globalInfra = function() {
+    return (window.vGlobalInfra || (() => '<div class="empty"><div class="big">Laddar Global Infra...</div></div>'))();
+  };
+}
+
+function patchMainTick() {
+  let tickCount = 0;
+  const origStep = window.step;
+  window.step = function() {
+    if (origStep) origStep();
+    tickCount++;
+    if (tickCount % 8 === 0 && window.treasuryTick) {
+      window.treasuryTick();
+    }
+    // Update AQ badge
+    const aqBadge = document.querySelector('#nb-aq');
+    if (aqBadge && window.APPR) {
+      aqBadge.textContent = window.APPR.queue.length;
+    }
+  };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Wait for base app to init
+  setTimeout(() => {
+    injectEnterpriseCSS();
+    injectEntitySelector();
+    injectEnterpriseNav();
+    registerEnterpriseViews();
+    patchMainTick();
+
+    if (window.emit) {
+      window.emit('EnterpriseModuleLoaded', 'Multi-entity · Treasury · Graph · Approval Engine · AI Governance · Global Infra aktiverade', 'ok');
+    }
+
+    // Re-wire navitems (including new ones)
+    document.querySelectorAll('.navitem').forEach(n => {
+      if (n.dataset.view) {
+        n.addEventListener('click', () => window.go && window.go(n.dataset.view));
+      }
+    });
+  }, 500);
+});
+
+// END MODULE GLUE
+
+</script>
+</body>
+</html>
+<script>
+// ============================================================
+// CONNECTION FLOW MODAL — v2
+// Visar provider-specifika krav + simulerad OAuth-flow
+// ============================================================
+
+const PROVIDER_CONFIGS = {
+  nordea:  { name:'Nordea', flag:'🇸🇪', protocol:'PSD2 Open Banking', fields:[
+    {id:'org_nr',  label:'Organisationsnummer', placeholder:'556014-2751', hint:'Bolagets organisationsnummer — hämtas från Bolagsverket'},
+    {id:'account', label:'Kontonummer (valfri)', placeholder:'3300-XXXXXXXX', hint:'Lämna tomt för att synka alla konton automatiskt'},
+  ], steps:['Reconciler initierar PSD2-anslutning mot Nordea','BankID-dialog öppnas för firmatecknare','Samtycke bekräftat — access beviljad','Webhooks registreras automatiskt','Transaktioner börjar strömma in i realtid'] },
+
+  seb: { name:'SEB', flag:'🇸🇪', protocol:'PSD2 / SEPA / RTP', fields:[
+    {id:'org_nr', label:'Organisationsnummer', placeholder:'556014-2751', hint:'Bolagets organisationsnummer'},
+    {id:'account', label:'Kontonummer (valfri)', placeholder:'5000-XXXXXXXXXX', hint:'Lämna tomt för att synka alla konton'},
+  ], steps:['PSD2-förfrågan skickas till SEB','BankID-dialog öppnas','Behörighet bekräftad av firmatecknare','Realtidssynk aktiv','Transaktioner normaliseras automatiskt'] },
+
+  revolut: { name:'Revolut Business', flag:'🇪🇺', protocol:'Open Banking · SEPA', fields:[
+    {id:'email', label:'E-postadress (Revolut Business)', placeholder:'ekonomi@landvex.com', hint:'E-post kopplad till ert Revolut Business-konto'},
+    {id:'company', label:'Företagsnamn', placeholder:'LandveX AB', hint:'Som det anges i Revolut Business'},
+  ], steps:['Revolut Business-konto identifieras','Auktorisering skickas via e-post','Ni godkänner med ett klick','Kontosaldo synkas','Webhook-feed aktiv'] },
+
+  amex: { name:'American Express', flag:'🌐', protocol:'Card rails', fields:[
+    {id:'company', label:'Företagsnamn', placeholder:'LandveX AB', hint:'Som registrerat hos American Express'},
+    {id:'card_last4', label:'De 4 sista siffrorna på kortet', placeholder:'1234', hint:'För att identifiera rätt kortprogram'},
+  ], steps:['Amex-konto identifieras','Auktorisering skickas till kontaktperson','Kortprogram bekräftat','Transaktionsfeed aktiv','Normalisering klar'] },
+
+  chase: { name:'Chase', flag:'🇺🇸', protocol:'ACH · Fedwire', fields:[
+    {id:'company', label:'Company Legal Name', placeholder:'LandveX Inc.', hint:'As registered with Chase'},
+    {id:'iban',    label:'IBAN / Account Number', placeholder:'XXXXXXXXXXXX', hint:'Business checking account number'},
+  ], steps:['Chase-konto identifieras via Plaid','Kontoidentitet verifieras','ACH-åtkomst bekräftad','Fedwire-koppling aktiv','Realtidssync startar'] },
+
+  hsbc: { name:'HSBC', flag:'🇬🇧', protocol:'Open Banking UK · SWIFT', fields:[
+    {id:'company', label:'Company Name', placeholder:'LandveX Ltd.', hint:'As registered with HSBC'},
+    {id:'iban',    label:'IBAN', placeholder:'GB29 NWBK 6016 1331 9268 19', hint:'Business account IBAN'},
+  ], steps:['Open Banking UK-anslutning initieras','eIDAS-verifiering klar','HSBC-auktorisering genomförd','SWIFT-koppling aktiv','Synk startar'] },
+
+  fortnox: { name:'Fortnox', flag:'🇸🇪', protocol:'Fortnox · OAuth 2.0', fields:[
+    {id:'email', label:'E-post (Fortnox-konto)', placeholder:'ekonomi@landvex.com', hint:'E-postadressen ni använder för att logga in i Fortnox'},
+    {id:'company', label:'Företagsnamn i Fortnox', placeholder:'LandveX AB', hint:'Som det visas i Fortnox — används för att matcha rätt bolag'},
+  ], steps:['Reconciler skickar auktoriseringsförfrågan till Fortnox','Ni loggar in i Fortnox och godkänner med ett klick','Åtkomst beviljad automatiskt','Fakturor och verifikationer börjar synkas','Ledger-integrationen är aktiv'] },
+
+  visma: { name:'Visma eAccounting', flag:'🇸🇪', protocol:'Visma eAccounting API', fields:[
+    {id:'email', label:'E-post (Visma-konto)', placeholder:'ekonomi@landvex.com', hint:'E-postadressen ni använder i Visma eAccounting'},
+    {id:'company', label:'Företagsnamn i Visma', placeholder:'LandveX AB', hint:'Som det visas i Visma'},
+  ], steps:['Reconciler initierar Visma Connect','Ni loggar in och godkänner åtkomst','Tenant identifieras automatiskt','Bokföringsdata börjar synkas','Integration aktiv'] },
+
+  xero: { name:'Xero', flag:'🌐', protocol:'Xero API · OAuth 2.0', fields:[
+    {id:'email', label:'E-post (Xero-konto)', placeholder:'finance@landvex.com', hint:'E-postadressen ni använder i Xero'},
+    {id:'company', label:'Organisation i Xero', placeholder:'LandveX', hint:'Organisationsnamnet i Xero'},
+  ], steps:['Reconciler öppnar Xero-auktorisering','Ni loggar in och väljer organisation','Xero godkänner åtkomst','Synk konfigureras automatiskt','Bokföringsdata strömmar in'] },
+
+  sap: { name:'SAP S/4HANA', flag:'🏢', protocol:'SAP Integration Suite', fields:[
+    {id:'company', label:'Bolagsnamn i SAP', placeholder:'LandveX GmbH', hint:'Som konfigurerat i ert SAP-system'},
+    {id:'system',  label:'SAP-system / Miljö', placeholder:'Produktion', hint:'Produktion, test eller sandbox', type:'select', options:['Produktion','Test/QA','Sandbox']},
+    {id:'contact', label:'Kontaktperson IT (e-post)', placeholder:'it-admin@landvex.com', hint:'Er SAP-administratör — Reconciler skickar kopplingsförfrågan dit'},
+  ], steps:['Reconciler skickar kopplingsförfrågan till er SAP-admin','SAP-administratören godkänner integrationen','RFC-koppling konfigureras av Reconciler','FI-modul mappas mot canonical ontology','Realtidssynk aktiv'] },
+};
+
+// Skapa modal DOM
+// Skapa modal DOM
+function createConnectionModal() {
+  if (document.getElementById('conn-modal-bg')) return;
+  const bg = document.createElement('div');
+  bg.id = 'conn-modal-bg';
+  bg.style.cssText = 'position:fixed;inset:0;background:rgba(0,30,80,.45);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s';
+  bg.innerHTML = `
+    <div id="conn-modal" style="background:#fff;border-radius:3px;box-shadow:0 8px 40px rgba(0,30,80,.22);width:520px;max-width:94vw;max-height:90vh;overflow-y:auto;transform:translateY(16px);transition:.2s">
+      <div id="conn-modal-head" style="padding:20px 22px 16px;border-bottom:1px solid #dfe4e8;display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#6b7785;font-weight:600;margin-bottom:4px" id="conn-modal-proto"></div>
+          <div style="font-size:20px;font-weight:600;color:#001e50;display:flex;align-items:center;gap:10px" id="conn-modal-title"></div>
+          <div style="font-size:12px;color:#6b7785;margin-top:3px" id="conn-modal-sub">Fyll i uppgifterna nedan — Reconciler hanterar resten autonomt.</div>
+        </div>
+        <button onclick="closeConnectionModal()" style="font-size:22px;color:#9aa5b1;line-height:1;padding:2px 6px;border-radius:3px;cursor:pointer;background:none;border:none">×</button>
+      </div>
+      <div id="conn-modal-body" style="padding:22px"></div>
+      <div id="conn-modal-footer" style="padding:14px 22px 20px;border-top:1px solid #dfe4e8;display:flex;gap:10px;justify-content:flex-end"></div>
+    </div>`;
+  document.body.appendChild(bg);
+  setTimeout(() => { bg.style.opacity='1'; document.getElementById('conn-modal').style.transform='translateY(0)'; }, 10);
+}
+
+window.closeConnectionModal = function() {
+  const bg = document.getElementById('conn-modal-bg');
+  if (!bg) return;
+  bg.style.opacity='0';
+  setTimeout(() => bg.remove(), 200);
+};
+
+window.openConnectionModal = function(id) {
+  const cfg = PROVIDER_CONFIGS[id];
+  if (!cfg) { window.connect && window.connect(id); return; }
+  if (window.S?.conns?.[id] === 'on') return; // already connected
+
+  createConnectionModal();
+  document.getElementById('conn-modal-proto').textContent = cfg.protocol;
+  document.getElementById('conn-modal-title').innerHTML = `<span style="font-size:22px">${cfg.flag}</span> Anslut ${cfg.name}`;
+
+  const body = document.getElementById('conn-modal-body');
+  body.innerHTML = `
+    <div style="font-size:12px;color:#6b7785;background:#f4f5f6;border:1px solid #dfe4e8;border-left:3px solid #001e50;padding:10px 13px;border-radius:2px;margin-bottom:18px;line-height:1.5">
+      Reconciler orkestrerar hela anslutningen autonomt — inga webhooks, inga scopes, ingen manuell konfiguration. Fyll i identitetsuppgifterna nedan en gång.
+    </div>
+    ${cfg.fields.map(f => `
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:#3c4858;margin-bottom:6px">${f.label}</label>
+        ${f.type==='select'
+          ? `<select id="cf-${f.id}" style="width:100%;padding:9px 12px;border:1px solid #dfe4e8;border-radius:3px;font-size:13px;font-family:inherit;background:#fff;color:#001e50">
+              ${(f.options||[]).map(o=>`<option>${o}</option>`).join('')}
+             </select>`
+          : `<input id="cf-${f.id}" type="${f.type||'text'}" placeholder="${f.placeholder||''}"
+              style="width:100%;padding:9px 12px;border:1px solid #dfe4e8;border-radius:3px;font-size:13px;font-family:var(--mono,'IBM Plex Mono',monospace);color:#001e50;background:#fff"
+              value="${f.placeholder?.includes('•') ? '' : f.placeholder||''}">`}
+        <div style="font-size:11px;color:#9aa5b1;margin-top:4px">${f.hint||''}</div>
+      </div>`).join('')}
+    <div id="conn-flow-steps" style="display:none;margin-top:18px">
+      <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:#6b7785;margin-bottom:10px">Anslutningsflöde</div>
+      ${cfg.steps.map((s,i)=>`
+        <div id="step-${id}-${i}" style="display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12.5px;color:#9aa5b1;border-bottom:1px solid #fafbfc">
+          <div id="step-ic-${id}-${i}" style="width:18px;height:18px;border-radius:50%;border:2px solid #dfe4e8;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px">
+            ${i+1}
+          </div>
+          ${s}
+        </div>`).join('')}
+    </div>`;
+
+  const footer = document.getElementById('conn-modal-footer');
+  footer.innerHTML = `
+    <button onclick="closeConnectionModal()" style="padding:9px 18px;border:1px solid #c8d1d9;border-radius:3px;font-size:12.5px;font-weight:600;color:#3c4858;cursor:pointer;background:#fff">Avbryt</button>
+    <button id="conn-submit-btn" onclick="submitConnection('${id}')"
+      style="padding:9px 22px;background:#001e50;color:#fff;border:none;border-radius:3px;font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:.04em">
+      Anslut med ett klick →
+    </button>`;
+};
+
+window.submitConnection = function(id) {
+  const cfg = PROVIDER_CONFIGS[id];
+  if (!cfg) return;
+  const btn = document.getElementById('conn-submit-btn');
+  if (btn) { btn.disabled=true; btn.textContent='Ansluter…'; btn.style.opacity='.7'; }
+
+  const stepsDiv = document.getElementById('conn-flow-steps');
+  if (stepsDiv) stepsDiv.style.display='block';
+
+  let i = 0;
+  const runStep = () => {
+    if (i > 0) {
+      const prev = document.getElementById(`step-ic-${id}-${i-1}`);
+      if (prev) { prev.style.background='#e7f1ec'; prev.style.border='2px solid #1d6f4a'; prev.style.color='#1d6f4a'; prev.innerHTML='✓'; }
+      const prevRow = document.getElementById(`step-${id}-${i-1}`);
+      if (prevRow) prevRow.style.color='#3c4858';
+    }
+    if (i >= cfg.steps.length) {
+      // Done
+      setTimeout(() => {
+        closeConnectionModal();
+        // Now actually connect in the simulation
+        if (window.connect) window.connect(id);
+      }, 400);
+      return;
+    }
+    const ic = document.getElementById(`step-ic-${id}-${i}`);
+    if (ic) {
+      ic.style.background='#e6edf5'; ic.style.border='2px solid #1b4e8a'; ic.style.color='#1b4e8a';
+      ic.innerHTML=`<span style="display:inline-block;width:10px;height:10px;border:2px solid #1b4e8a;border-top-color:transparent;border-radius:50%;animation:rot .6s linear infinite"></span>`;
+    }
+    const row = document.getElementById(`step-${id}-${i}`);
+    if (row) row.style.color='#001e50';
+    i++;
+    setTimeout(runStep, 600 + Math.random()*400);
+  };
+  runStep();
+};
+
+// Patch connect buttons — override onclick after DOM is ready
+function patchConnectButtons() {
+  document.querySelectorAll('.cbtn:not(.connected):not(.connecting)').forEach(btn => {
+    const card = btn.closest('[class*="conn"]');
+    if (!card) return;
+    const onclick = btn.getAttribute('onclick')||'';
+    const match = onclick.match(/connect\('([^']+)'\)/);
+    if (match) {
+      btn.setAttribute('onclick', `openConnectionModal('${match[1]}')`);
+    }
+  });
+}
+
+// Also patch the main connect() function fallback for providers without config
+const _origConnect = window.connect;
+window.connect = function(id) {
+  const cfg = PROVIDER_CONFIGS[id];
+  // If called directly (not from modal), show modal first
+  if (cfg && (!window.S?.conns?.[id])) {
+    openConnectionModal(id);
+    return;
+  }
+  if (_origConnect) _origConnect(id);
+};
+
+// Patch buttons whenever view renders
+const _origPaint = window.paint;
+if (_origPaint) {
+  window.paint = function() {
+    _origPaint();
+    setTimeout(patchConnectButtons, 50);
+  };
+}
+setTimeout(patchConnectButtons, 800);
+
+// Close on backdrop click
+document.addEventListener('click', e => {
+  if (e.target.id === 'conn-modal-bg') closeConnectionModal();
+});
+</script>

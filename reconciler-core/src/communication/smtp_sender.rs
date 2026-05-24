@@ -119,7 +119,6 @@ impl MessageSender for SmtpSender {
                 .reply_to(reply_to)
                 .to(to_box)
                 .subject(&msg.subject)
-                .header(lettre::message::header::MimeVersion::V1_0)
                 .multipart(
                     MultiPart::alternative()
                         .singlepart(

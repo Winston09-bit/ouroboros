@@ -4,6 +4,7 @@ mod intelligence;
 mod matching;
 mod workflow;
 mod compliance;
+mod communication;
 mod connectors;
 mod ai;
 mod events;

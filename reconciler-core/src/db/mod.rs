@@ -3,7 +3,9 @@
 // Database connection pool and lifecycle management
 // =============================================================================
 
+pub mod connection;
 pub mod repositories;
+pub use connection::*;
 
 use std::time::Duration;
 
@@ -185,4 +187,3 @@ mod tests {
         assert_eq!(stats.to_string(), "pool(size=5, idle=3)");
     }
 }
-pub mod repositories;

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ArrowLeftRight, FileText,
   ShieldCheck, Zap, Settings, ChevronRight,
+  Store, GitGraph,
 } from 'lucide-react';
 
 const nav = [
@@ -12,6 +13,8 @@ const nav = [
   { href: '/evidence',      icon: FileText,        label: 'Underlag'        },
   { href: '/audit',         icon: ShieldCheck,     label: 'Revision'        },
   { href: '/escalations',   icon: Zap,             label: 'Eskaleringar'   },
+  { href: '/merchants',     icon: Store,           label: 'Merchants'       },
+  { href: '/graph',         icon: GitGraph,        label: 'Graph'           },
   { href: '/settings',      icon: Settings,        label: 'Inställningar'   },
 ];
 

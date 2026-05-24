@@ -5,6 +5,7 @@ mod matching;
 mod workflow;
 mod compliance;
 mod communication;
+mod receipt_format;
 mod connectors;
 mod ai;
 mod events;

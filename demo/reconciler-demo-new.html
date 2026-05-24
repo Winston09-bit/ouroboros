@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reconciler – Interaktiv demo</title>
+<style>
+  :root {
+    --black: #0A0A0A;
+    --white: #FAFAFA;
+    --accent: #1A6B3A;
+    --accent2: #1A4A6B;
+    --gray: #6B6B6B;
+    --light: #F5F4F1;
+    --border: #E0DDD8;
+    --pos-bg: #EFF8F2;
+    --pos-border: #A8D5B5;
+    --warn-bg: #FDF6E3;
+    --warn-border: #E8D08A;
+    --warn-text: #8A6400;
+    --neg-bg: #FBEEEE;
+    --neg-border: #E5B5B5;
+    --neg-text: #9A2C2C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--black); background: var(--white); line-height: 1.5; }
+
+  /* Top bar */
+  .topnav { border-bottom: 1px solid var(--border); padding: 16px 40px; display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto; }
+  .topnav .brand { font-weight: 700; font-size: 16px; letter-spacing: -0.3px; }
+  .topnav .brand span { color: var(--accent); }
+  .topnav .back { color: var(--gray); text-decoration: none; font-size: 14px; }
+  .topnav .back:hover { color: var(--black); }
+
+  /* Hero */
+  .demo-hero { max-width: 1100px; margin: 0 auto; padding: 40px 40px 24px; }
+  .demo-hero .badge { display: inline-block; padding: 4px 14px; background: var(--pos-bg); border: 1px solid var(--pos-border); border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 16px; }
+  .demo-hero h1 { font-size: 36px; font-weight: 700; letter-spacing: -0.8px; line-height: 1.15; margin-bottom: 12px; }
+  .demo-hero h1 span { color: var(--accent); }
+  .demo-hero p { font-size: 16px; color: var(--gray); max-width: 700px; }
+
+  /* Demo console */
+  .demo-shell { max-width: 1100px; margin: 32px auto 0; padding: 0 40px; }
+  .panel { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .panel .head { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .panel .head h2 { font-size: 16px; font-weight: 600; }
+  .panel .head .sub { font-size: 12px; color: var(--gray); }
+  .panel .body { padding: 24px; }
+
+  /* Scenario picker */
+  .scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .scen-card { padding: 18px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.15s; background: #fff; text-align: left; font-family: inherit; }
+  .scen-card:hover { border-color: var(--gray); }
+  .scen-card.active { border-color: var(--accent); background: var(--pos-bg); }
+  .scen-card .name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .scen-card .meta { font-size: 12px; color: var(--gray); line-height: 1.4; }
+  .scen-card .pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; background: var(--light); border-radius: 10px; color: var(--gray); margin-top: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* Run button */
+  .run-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-top: 8px; flex-wrap: wrap; }
+  .run-row .left { font-size: 13px; color: var(--gray); }
+  .btn { padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; font-family: inherit; }
+  .btn-primary { background: var(--black); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-primary:disabled { background: #999; cursor: not-allowed; }
+  .btn-secondary { background: #fff; color: var(--black); border-color: var(--border); }
+  .btn-secondary:hover { border-color: var(--gray); }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-accent:hover { background: #155831; }
+
+  /* Progress */
+  .progress-shell { padding: 32px 0; }
+  .progress-steps { display: grid; gap: 14px; max-width: 540px; margin: 0 auto; }
+  .pstep { display: flex; align-items: center; gap: 14px; font-size: 14px; color: var(--gray); opacity: 0.4; transition: all 0.3s; }
+  .pstep.active { color: var(--black); opacity: 1; }
+  .pstep.done { color: var(--accent); opacity: 1; }
+  .pstep .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 700; }
+  .pstep.active .dot { border-color: var(--black); }
+  .pstep.done .dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .pstep.active .dot::after { content: ""; width: 8px; height: 8px; background: var(--black); border-radius: 50%; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Results */
+  .results { display: none; }
+  .results.visible { display: block; animation: fadein 0.4s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .sum-card { padding: 18px; background: var(--light); border-radius: 10px; }
+  .sum-card .lab { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .sum-card .val { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .sum-card .val small { font-size: 14px; font-weight: 500; color: var(--gray); }
+  .sum-card.green .val { color: var(--accent); }
+  .sum-card.warn .val { color: var(--warn-text); }
+  .sum-card.neg .val { color: var(--neg-text); }
+  .sum-card .desc { font-size: 12px; color: var(--gray); margin-top: 6px; }
+
+  /* Table */
+  .table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  table.tx { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.tx thead { background: var(--light); }
+  table.tx th { text-align: left; padding: 10px 14px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray); border-bottom: 1px solid var(--border); }
+  table.tx td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.tx tr:last-child td { border-bottom: none; }
+  table.tx tr.row-warn { background: var(--warn-bg); }
+  table.tx tr.row-neg { background: var(--neg-bg); }
+  table.tx td.amt { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-weight: 500; }
+  table.tx td.date { color: var(--gray); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.tx td.acct { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; color: var(--gray); }
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; line-height: 1.4; }
+  .tag.ok { background: var(--pos-bg); color: var(--accent); border: 1px solid var(--pos-border); }
+  .tag.warn { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
+  .tag.neg { background: var(--neg-bg); color: var(--neg-text); border: 1px solid var(--neg-border); }
+  .note { font-size: 12px; color: var(--gray); margin-top: 4px; line-height: 1.4; }
+
+  /* ROI banner */
+  .roi-banner { margin-top: 24px; background: var(--black); color: #fff; border-radius: 12px; padding: 24px 28px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 20px; align-items: center; }
+  .roi-banner .rb-item .lab { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .roi-banner .rb-item .val { font-size: 24px; font-weight: 700; color: #5BC47A; }
+  .roi-banner .rb-item .val small { font-size: 12px; color: #999; font-weight: 500; margin-left: 4px; }
+
+  /* Bottom CTA */
+  .bottom-cta { max-width: 700px; margin: 60px auto; padding: 40px; background: var(--light); border-radius: 16px; text-align: center; }
+  .bottom-cta h2 { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+  .bottom-cta p { color: var(--gray); margin-bottom: 24px; font-size: 14px; }
+  .bottom-cta .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); padding: 24px 40px; display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 60px auto 0; font-size: 12px; color: var(--gray); flex-wrap: wrap; gap: 12px; }
+  footer a { color: var(--gray); text-decoration: none; margin-left: 16px; }
+  footer a:hover { color: var(--black); }
+
+  /* Responsive */
+  @media (max-width: 760px) {
+    .demo-hero h1 { font-size: 28px; }
+    .scenarios { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .roi-banner { grid-template-columns: 1fr; text-align: center; }
+    .topnav, .demo-hero, .demo-shell, footer { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="brand">Reconciler<span>.</span></div>
+  <a href="/reconciler/" class="back">← Tillbaka till Reconciler</a>
+</div>
+
+<div class="demo-hero">
+  <div class="badge">▶ Interaktiv sandbox · demodata · ingen registrering</div>
+  <h1>Prova en stämning. <span>På riktigt.</span></h1>
+  <p>Välj ett av tre exempelbolag, kör stämningen och se vad Reconciler upptäcker — matchade poster, OBS-listor, saknade underlag och konkret tidsbesparing. Allt på under 3 sekunder.</p>
+</div>
+
+<div class="demo-shell">
+  <div class="panel" id="setupPanel">
+    <div class="head">
+      <div>
+        <h2>1 · Välj exempelbolag</h2>
+        <div class="sub">Tre verkliga scenarier från svenska SMB-bolag (anonymiserade)</div>
+      </div>
+      <div class="sub mono" id="periodLabel">Period: 2026-04 (april)</div>
+    </div>
+    <div class="body">
+      <div class="scenarios" id="scenarios"></div>
+      <div class="run-row">
+        <div class="left" id="setupHint">Bolag valt: <strong id="setupHintBolag">—</strong> · <span id="setupHintTx">—</span></div>
+        <button class="btn btn-primary" id="runBtn" disabled>
+          <span>Kör stämning</span>
+          <span>→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="runPanel" style="display:none;margin-top:20px">
+    <div class="head">
+      <h2>2 · Reconciler arbetar</h2>
+      <div class="sub mono" id="runTimer">0.0s</div>
+    </div>
+    <div class="body">
+      <div class="progress-shell">
+        <div class="progress-steps" id="progressSteps"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel results" id="resultsPanel" style="margin-top:20px">
+    <div class="head">
+      <div>
+        <h2>3 · Stämningsrapport — <span id="resBolag">—</span></h2>
+        <div class="sub" id="resMeta">—</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" id="resetBtn">↺ Kör igen</button>
+        <button class="btn btn-accent" id="exportBtn">Exportera PDF</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="summary-grid">
+        <div class="sum-card green">
+          <div class="lab">Matchade poster</div>
+          <div class="val" id="sumOk">—</div>
+          <div class="desc">Automatiskt verifierade</div>
+        </div>
+        <div class="sum-card warn">
+          <div class="lab">OBS-poster</div>
+          <div class="val" id="sumWarn">—</div>
+          <div class="desc">Kräver granskning</div>
+        </div>
+        <div class="sum-card neg">
+          <div class="lab">Saknat underlag</div>
+          <div class="val" id="sumNeg">—</div>
+          <div class="desc">Begäran skickad</div>
+        </div>
+        <div class="sum-card">
+          <div class="lab">Avvikelse netto</div>
+          <div class="val" id="sumDiff">—</div>
+          <div class="desc">Totalt belopp på OBS-listan</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="tx">
+          <thead>
+            <tr>
+              <th style="width:90px">Datum</th>
+              <th>Motpart / Verifikat</th>
+              <th style="width:80px">Konto</th>
+              <th style="width:110px;text-align:right">Belopp</th>
+              <th style="width:160px">Status</th>
+            </tr>
+          </thead>
+          <tbody id="txBody"></tbody>
+        </table>
+      </div>
+
+      <div class="roi-banner">
+        <div class="rb-item">
+          <div class="lab">Tid sparad</div>
+          <div class="val" id="roiTime">— <small>min</small></div>
+        </div>
+        <div class="rb-item">
+          <div class="lab">Värde av tid</div>
+          <div class="val" id="roiCost">— <small>kr</small></div>
+        </div>
+        <div class="rb-item">
+          <div class="lab">Stämning klar</div>
+          <div class="val" id="roiTotal">— <small>sek</small></div>
+        </div>
+        <div>
+          <a href="/reconciler/#waitlist" class="btn btn-accent">Kom igång gratis →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-cta">
+  <h2>Redo att stämma av på riktigt?</h2>
+  <p>Anslut Fortnox eller Visma på 2 minuter. 50 platser i betan. Inget kreditkort.</p>
+  <div class="cta-row">
+    <a href="/reconciler/#waitlist" class="btn btn-primary">Reservera plats →</a>
+    <a href="/reconciler/" class="btn btn-secondary">Läs mer om Reconciler</a>
+  </div>
+</div>
+
+<footer>
+  <div>© 2026 Reconciler Inc. (under formation) · Delaware, USA · GDPR-compliant · EU-data</div>
+  <div>
+    <a href="/reconciler/">Översikt</a>
+    <a href="mailto:winston@hypbit.com">Kontakt</a>
+  </div>
+</footer>
+
+<script>
+// ----- Scenarios -----
+const SCENARIOS = [
+  {
+    id: "bjork",
+    name: "Björk & Partners AB",
+    desc: "Konsultbyrå · 24 anställda · Stockholm",
+    pill: "147 transaktioner",
+    period: "2026-04",
+    rows: [
+      { d: "2026-04-02", who: "Anthropic Ireland Ltd", verif: "V-04-002", acct: "5420", amt: 1509.36, status: "ok" },
+      { d: "2026-04-03", who: "Google Workspace · Faktura GW-2026-04-118", acct: "5420", amt: 4480.00, status: "ok" },
+      { d: "2026-04-04", who: "Fortnox AB · Abonnemang", acct: "6540", amt: 549.00, status: "ok" },
+      { d: "2026-04-05", who: "SJ AB · Tjänsteresa Göteborg", acct: "5810", amt: 2486.00, status: "ok" },
+      { d: "2026-04-08", who: "Hilton Stockholm Slussen", acct: "5820", amt: 6740.00, status: "warn", note: "Belopp avviker −237 kr från bokat verifikat (kvitto 6 503 kr). Föreslår justering." },
+      { d: "2026-04-09", who: "Telia Sverige AB · Företagsabonnemang", acct: "6212", amt: 1894.00, status: "ok" },
+      { d: "2026-04-10", who: "ICA Maxi Lindhagen · Representation", acct: "6072", amt: 482.50, status: "neg", note: "Underlag saknas. Begäran skickad till kvitto@ica.se via leverantörsportalen." },
+      { d: "2026-04-11", who: "Microsoft Ireland Operations · M365", acct: "5420", amt: 8927.50, status: "ok" },
+      { d: "2026-04-15", who: "Vasakronan AB · Hyra Q2", acct: "5010", amt: 84500.00, status: "ok" },
+      { d: "2026-04-16", who: "Okänd betalmottagare · SWISH", acct: "1930", amt: 12400.00, status: "warn", note: "OCR-koppling saknas. Reconciler föreslår motpart: \"NORDIC TRAVEL AB\" (87% säkerhet)." },
+      { d: "2026-04-17", who: "If Skadeförsäkring · Företagsförsäkring", acct: "6310", amt: 3220.00, status: "ok" },
+      { d: "2026-04-19", who: "LinkedIn Ireland · Sales Navigator", acct: "5910", amt: 1495.00, status: "ok" },
+      { d: "2026-04-22", who: "Faktura nr 22404 · BOOK4WORK AB", acct: "5810", amt: 3812.60, status: "warn", note: "Dubbelbokföring detekterad — samma faktura bokförd 2026-04-19 (V-04-019)." },
+      { d: "2026-04-24", who: "Stripe Technology Europe · Avgifter", acct: "6570", amt: 2104.00, status: "ok" },
+      { d: "2026-04-25", who: "PostNord Group AB · Frakt", acct: "5910", amt: 187.00, status: "ok" },
+      { d: "2026-04-28", who: "Restaurang Operakällaren · Kundlunch", acct: "6071", amt: 4280.00, status: "neg", note: "Saknad specifikation. Kvitto-OCR pågår (Kivra Business)." },
+      { d: "2026-04-29", who: "Skatteverket · Arbetsgivaravgifter", acct: "2710", amt: 124800.00, status: "ok" },
+      { d: "2026-04-30", who: "Bankgiro · Lön Q2 utbetalning", acct: "7010", amt: 384200.00, status: "ok" },
+    ],
+    timeManualMin: 47,
+    hourlyRate: 450,
+    totalSeconds: 2.8,
+  },
+  {
+    id: "teknova",
+    name: "Teknova Group AB",
+    desc: "SaaS-bolag · 68 anställda · Göteborg",
+    pill: "312 transaktioner",
+    period: "2026-04",
+    rows: [
+      { d: "2026-04-01", who: "Amazon Web Services EMEA SARL", acct: "5420", amt: 38740.00, status: "ok" },
+      { d: "2026-04-02", who: "Cloudflare Inc · Enterprise plan", acct: "5420", amt: 14920.00, status: "ok" },
+      { d: "2026-04-03", who: "Datadog Inc · Observability", acct: "5420", amt: 22150.00, status: "warn", note: "Valutadifferens +482 kr (USD→SEK kurs 2026-04-01 vs 2026-04-03). Reconciler föreslår konto 3960 valutakursvinst." },
+      { d: "2026-04-04", who: "OpenAI LLC · API credits", acct: "5420", amt: 18230.00, status: "ok" },
+      { d: "2026-04-05", who: "Anthropic Ireland Ltd · Claude API", acct: "5420", amt: 27440.00, status: "ok" },
+      { d: "2026-04-08", who: "GitHub Inc · Enterprise seats", acct: "5420", amt: 9870.00, status: "ok" },
+      { d: "2026-04-09", who: "Notion Labs Inc · Team plan", acct: "5420", amt: 4280.00, status: "ok" },
+      { d: "2026-04-10", who: "Faktura SE-2026-118 · TECHWORLD KONFERENS", acct: "6970", amt: 24500.00, status: "neg", note: "Specifikation saknas — endast totalsumma. Underlag begärt via Peppol." },
+      { d: "2026-04-12", who: "WeWork Sverige AB · Kontorshyra", acct: "5010", amt: 47200.00, status: "ok" },
+      { d: "2026-04-14", who: "Castellum AB · Hyra serverhall", acct: "5010", amt: 18900.00, status: "ok" },
+      { d: "2026-04-15", who: "Riksbanken · Räntejustering bolagskonto", acct: "8410", amt: -2487.00, status: "warn", note: "Negativ räntejustering — Reconciler föreslår konto 8410 räntekostnader istället för 1930." },
+      { d: "2026-04-17", who: "Apple Distribution International · MDM", acct: "5420", amt: 6540.00, status: "ok" },
+      { d: "2026-04-18", who: "Stripe Payments Europe · Avgifter Q2", acct: "6570", amt: 18420.00, status: "ok" },
+      { d: "2026-04-20", who: "Webhallen Sverige AB · Hårdvara dev-team", acct: "5410", amt: 38420.00, status: "warn", note: "Underlag finns men matchning till investeringskonto 1220 föreslås (belopp överstiger 25 000 kr)." },
+      { d: "2026-04-22", who: "Linode LLC · Backup-server", acct: "5420", amt: 1840.00, status: "ok" },
+      { d: "2026-04-24", who: "DHL Express · International shipping", acct: "5910", amt: 4280.00, status: "neg", note: "Tulldeklaration saknas. Reconciler hämtar från DHL kundportal automatiskt." },
+      { d: "2026-04-26", who: "Telia Carrier · Internet enterprise", acct: "6212", amt: 28940.00, status: "ok" },
+      { d: "2026-04-28", who: "Skatteverket · Moms april", acct: "2640", amt: 187420.00, status: "ok" },
+      { d: "2026-04-30", who: "Bankgiro · Lön april", acct: "7010", amt: 1248000.00, status: "ok" },
+    ],
+    timeManualMin: 62,
+    hourlyRate: 480,
+    totalSeconds: 3.1,
+  },
+  {
+    id: "cafe",
+    name: "Café Södermalm HB",
+    desc: "Restaurang · 7 anställda · Stockholm",
+    pill: "89 transaktioner",
+    period: "2026-04",
+    rows: [
+      { d: "2026-04-02", who: "Martin & Servera AB · Veckoleverans", acct: "4010", amt: 12480.00, status: "ok" },
+      { d: "2026-04-03", who: "Lantmännen Cerealia · Bröd", acct: "4010", amt: 1850.00, status: "ok" },
+      { d: "2026-04-04", who: "Arla Foods AB · Mejeri", acct: "4010", amt: 2240.00, status: "ok" },
+      { d: "2026-04-05", who: "iZettle Sverige AB · Kortavgifter", acct: "6570", amt: 1487.50, status: "ok" },
+      { d: "2026-04-08", who: "Klarna Bank · Avstämning mars", acct: "1510", amt: 8920.00, status: "warn", note: "Belopp avviker −124 kr från Klarna-rapport. Sannolik returavgift — Reconciler föreslår konto 3740." },
+      { d: "2026-04-09", who: "Fortum Sverige AB · El", acct: "5060", amt: 4820.00, status: "ok" },
+      { d: "2026-04-10", who: "Okänd avsändare · KONTANTINS", acct: "1910", amt: 4200.00, status: "warn", note: "Kontant insättning utan motpart. Reconciler föreslår koppling till dagskassa 2026-04-09." },
+      { d: "2026-04-12", who: "Stockholm Vatten och Avfall", acct: "5070", acct2: "5070", amt: 1240.00, status: "ok" },
+      { d: "2026-04-15", who: "Hyresnämnden · Lokalhyra april", acct: "5010", amt: 38400.00, status: "ok" },
+      { d: "2026-04-16", who: "Spendrups Bryggeri AB", acct: "4010", amt: 7820.00, status: "neg", note: "Faktura saknar OCR-koppling. Begäran skickad via Peppol-nätverk." },
+      { d: "2026-04-18", who: "Trygg-Hansa · Lokalförsäkring", acct: "6310", amt: 2840.00, status: "ok" },
+      { d: "2026-04-20", who: "Telia Sverige · Företagsabonnemang", acct: "6212", amt: 487.00, status: "ok" },
+      { d: "2026-04-22", who: "ICA Nära · Kompletteringsinköp", acct: "4010", amt: 487.50, status: "warn", note: "Privat inköp misstänks — beloppet ligger under tröskel för representation. Föreslår granskning." },
+      { d: "2026-04-24", who: "Fortnox AB · Bokföring", acct: "6540", amt: 249.00, status: "ok" },
+      { d: "2026-04-26", who: "Bring Citymail · Frakt", acct: "5910", amt: 187.00, status: "ok" },
+      { d: "2026-04-28", who: "Skatteverket · Arbetsgivaravgifter", acct: "2710", amt: 18420.00, status: "ok" },
+      { d: "2026-04-30", who: "Bankgiro · Lön april", acct: "7010", amt: 84200.00, status: "ok" },
+    ],
+    timeManualMin: 38,
+    hourlyRate: 420,
+    totalSeconds: 2.4,
+  },
+];
+
+// ----- Render scenarios -----
+let selected = null;
+const elScen = document.getElementById("scenarios");
+SCENARIOS.forEach(s => {
+  const b = document.createElement("button");
+  b.className = "scen-card";
+  b.dataset.id = s.id;
+  b.innerHTML = `
+    <div class="name">${s.name}</div>
+    <div class="meta">${s.desc}</div>
+    <span class="pill">${s.pill}</span>
+  `;
+  b.addEventListener("click", () => selectScenario(s.id));
+  elScen.appendChild(b);
+});
+
+function selectScenario(id) {
+  selected = SCENARIOS.find(s => s.id === id);
+  document.querySelectorAll(".scen-card").forEach(c => {
+    c.classList.toggle("active", c.dataset.id === id);
+  });
+  document.getElementById("setupHintBolag").textContent = selected.name;
+  document.getElementById("setupHintTx").textContent = selected.pill + " · period " + selected.period;
+  document.getElementById("runBtn").disabled = false;
+}
+
+// Pre-select första
+selectScenario("bjork");
+
+// ----- Run -----
+const STEPS = [
+  "Ansluter till Fortnox API …",
+  "Hämtar transaktioner och verifikat …",
+  "Matchar mot kontoplan + leverantörsregister …",
+  "Identifierar OBS-poster och avvikelser …",
+  "Genererar rapport …",
+];
+
+const runBtn = document.getElementById("runBtn");
+const setupPanel = document.getElementById("setupPanel");
+const runPanel = document.getElementById("runPanel");
+const resultsPanel = document.getElementById("resultsPanel");
+const stepsEl = document.getElementById("progressSteps");
+const timerEl = document.getElementById("runTimer");
+
+runBtn.addEventListener("click", runDemo);
+document.getElementById("resetBtn").addEventListener("click", reset);
+document.getElementById("exportBtn").addEventListener("click", () => {
+  alert("PDF-export är aktiverad i full version. Demo visar endast skärmrapport.");
+});
+
+function runDemo() {
+  if (!selected) return;
+  setupPanel.style.display = "none";
+  runPanel.style.display = "block";
+  resultsPanel.classList.remove("visible");
+
+  // Render steps
+  stepsEl.innerHTML = "";
+  STEPS.forEach((label, i) => {
+    const d = document.createElement("div");
+    d.className = "pstep";
+    d.innerHTML = `<div class="dot">${i+1}</div><div>${label}</div>`;
+    stepsEl.appendChild(d);
+  });
+
+  // Timer
+  const t0 = performance.now();
+  const timerInt = setInterval(() => {
+    const elapsed = (performance.now() - t0) / 1000;
+    timerEl.textContent = elapsed.toFixed(1) + "s";
+  }, 60);
+
+  // Animate steps
+  const stepDelay = (selected.totalSeconds * 1000) / STEPS.length;
+  STEPS.forEach((_, i) => {
+    setTimeout(() => {
+      const all = stepsEl.querySelectorAll(".pstep");
+      if (i > 0) all[i-1].classList.replace("active", "done");
+      all[i].classList.add("active");
+    }, i * stepDelay);
+  });
+
+  // Final
+  setTimeout(() => {
+    const all = stepsEl.querySelectorAll(".pstep");
+    all[all.length-1].classList.replace("active", "done");
+    clearInterval(timerInt);
+    timerEl.textContent = selected.totalSeconds.toFixed(1) + "s";
+    setTimeout(showResults, 400);
+  }, selected.totalSeconds * 1000);
+}
+
+function reset() {
+  resultsPanel.classList.remove("visible");
+  runPanel.style.display = "none";
+  setupPanel.style.display = "block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showResults() {
+  runPanel.style.display = "none";
+  resultsPanel.classList.add("visible");
+
+  // Sums
+  const ok = selected.rows.filter(r => r.status === "ok").length;
+  const warn = selected.rows.filter(r => r.status === "warn").length;
+  const neg = selected.rows.filter(r => r.status === "neg").length;
+  const diff = selected.rows
+    .filter(r => r.status !== "ok")
+    .reduce((sum, r) => sum + Math.abs(r.amt), 0);
+
+  document.getElementById("resBolag").textContent = selected.name;
+  document.getElementById("resMeta").textContent =
+    `Period ${selected.period} · ${selected.rows.length} av ${selected.pill.replace(/\D/g,"")} transaktioner visas · klar på ${selected.totalSeconds.toFixed(1)} sek`;
+  document.getElementById("sumOk").innerHTML = ok + ' <small>st</small>';
+  document.getElementById("sumWarn").innerHTML = warn + ' <small>st</small>';
+  document.getElementById("sumNeg").innerHTML = neg + ' <small>st</small>';
+  document.getElementById("sumDiff").innerHTML = formatSek(diff);
+
+  // Table
+  const tbody = document.getElementById("txBody");
+  tbody.innerHTML = "";
+  selected.rows.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.className = r.status === "warn" ? "row-warn" : r.status === "neg" ? "row-neg" : "";
+    const tag = r.status === "ok"
+      ? '<span class="tag ok">✓ Matchad</span>'
+      : r.status === "warn"
+      ? '<span class="tag warn">⚠ OBS</span>'
+      : '<span class="tag neg">✗ Saknar</span>';
+    tr.innerHTML = `
+      <td class="date">${r.d}</td>
+      <td>
+        <div>${escapeHtml(r.who)}</div>
+        ${r.note ? `<div class="note">${escapeHtml(r.note)}</div>` : ""}
+      </td>
+      <td class="acct">${r.acct}</td>
+      <td class="amt">${formatSek(r.amt)}</td>
+      <td>${tag}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // ROI
+  const timeSaved = selected.timeManualMin - Math.ceil(selected.totalSeconds / 60);
+  const valueSaved = Math.round((timeSaved / 60) * selected.hourlyRate);
+  document.getElementById("roiTime").innerHTML = timeSaved + ' <small>min</small>';
+  document.getElementById("roiCost").innerHTML = valueSaved.toLocaleString("sv-SE") + ' <small>kr</small>';
+  document.getElementById("roiTotal").innerHTML = selected.totalSeconds.toFixed(1) + ' <small>sek</small>';
+
+  resultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function formatSek(n) {
+  const sign = n < 0 ? "−" : "";
+  const abs = Math.abs(n);
+  return sign + abs.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " kr";
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+</script>
+
+</body>
+</html>

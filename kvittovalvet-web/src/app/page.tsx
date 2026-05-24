@@ -140,6 +140,23 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Liquidity warning */}
+      <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5 mb-4">
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="text-yellow-400 flex-shrink-0" size={18} />
+          <div>
+            <p className="text-sm font-medium text-yellow-300">Likviditetsvarning</p>
+            <p className="text-xs text-yellow-400/70">Svacka detekterad runt 9–19 maj · 150,000 kr kredit tillgänglig</p>
+          </div>
+          <a
+            href="/liquidity"
+            className="ml-auto text-xs px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-colors whitespace-nowrap"
+          >
+            Se analys →
+          </a>
+        </div>
+      </div>
+
       {/* Evidence pipeline */}
       <div className="rounded-xl border border-white/5 bg-white/[0.02] p-5 mb-4">
         <h2 className="text-sm font-medium text-white/70 mb-4 uppercase tracking-wider">Evidence Pipeline</h2>

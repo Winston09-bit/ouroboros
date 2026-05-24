@@ -4,12 +4,13 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ArrowLeftRight, FileText,
   ShieldCheck, Zap, Settings, ChevronRight,
-  Store, GitGraph,
+  Store, GitGraph, TrendingDown,
 } from 'lucide-react';
 
 const nav = [
   { href: '/',              icon: LayoutDashboard, label: 'Dashboard'      },
   { href: '/transactions',  icon: ArrowLeftRight,  label: 'Transaktioner'  },
+  { href: '/liquidity',     icon: TrendingDown,    label: 'Likviditet'      },
   { href: '/evidence',      icon: FileText,        label: 'Underlag'        },
   { href: '/audit',         icon: ShieldCheck,     label: 'Revision'        },
   { href: '/escalations',   icon: Zap,             label: 'Eskaleringar'   },

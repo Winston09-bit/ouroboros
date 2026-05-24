@@ -59,6 +59,14 @@ pub fn router(state: AppState) -> Router {
         .route("/evidence",           get(list_evidence))
         .route("/match",              post(run_match))
         .route("/escalations",        get(list_escalations))
+        // ── Liquidity & Credit ─────────────────────────────────────────────
+        .route("/liquidity/forecast",  post(liquidity_forecast))
+        .route("/liquidity/risk",      post(liquidity_risk_analysis))
+        .route("/credit/evaluate",     post(credit_evaluate))
+        .route("/credit/offers",       get(list_credit_offers))
+        .route("/merchants/list",      get(list_merchants_api))
+        .route("/vrf/verify",          post(vrf_verify))
+        .route("/graph/stats",         get(graph_stats))
         .with_state(state)
 }
 
@@ -459,5 +467,273 @@ async fn list_escalations() -> impl IntoResponse {
             { "step": 5, "label": "Registered Letter","automated": false },
             { "step": 6, "label": "Legal Export",     "automated": false },
         ]
+    }))
+}
+
+// ─────────────────────────────────────────────
+// LIQUIDITY FORECAST
+// ─────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct LiquidityForecastRequest {
+    pub current_balance: f64,
+    pub currency: Option<String>,
+    pub horizon_days: Option<u32>,
+}
+
+async fn liquidity_forecast(Json(req): Json<LiquidityForecastRequest>) -> impl IntoResponse {
+    let horizon = req.horizon_days.unwrap_or(30) as usize;
+    let currency = req.currency.clone().unwrap_or_else(|| "SEK".to_string());
+    let mut balance = req.current_balance;
+    let mut points = Vec::with_capacity(horizon);
+
+    for day in 1..=horizon {
+        let delta: f64 = if day <= 8 {
+            -3_000.0
+        } else if day <= 12 {
+            // Large outgoing: rent + salaries spread over 4 days
+            -42_500.0
+        } else if day <= 22 {
+            // Recovery: incoming payments
+            14_000.0
+        } else {
+            -1_500.0
+        };
+        balance += delta;
+        points.push(serde_json::json!({
+            "day": day,
+            "balance": (balance * 100.0).round() / 100.0,
+            "delta": delta,
+            "event": if day == 9 { "hyra" } else if day == 10 { "loner" } else if day == 14 { "kundbetalning" } else { "" }
+        }));
+    }
+
+    let min_balance = points.iter()
+        .map(|p| p["balance"].as_f64().unwrap_or(0.0))
+        .fold(f64::INFINITY, f64::min);
+
+    Json(serde_json::json!({
+        "current_balance": req.current_balance,
+        "currency": currency,
+        "horizon_days": horizon,
+        "min_projected_balance": (min_balance * 100.0).round() / 100.0,
+        "min_balance_day": points.iter().enumerate()
+            .min_by(|(_, a), (_, b)| {
+                a["balance"].as_f64().unwrap_or(0.0)
+                    .partial_cmp(&b["balance"].as_f64().unwrap_or(0.0))
+                    .unwrap()
+            })
+            .map(|(i, _)| i + 1)
+            .unwrap_or(0),
+        "forecast": points,
+        "generated_at": Utc::now()
+    }))
+}
+
+// ─────────────────────────────────────────────
+// LIQUIDITY RISK ANALYSIS
+// ─────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct LiquidityRiskRequest {
+    pub current_balance: f64,
+    pub horizon_days: Option<u32>,
+}
+
+async fn liquidity_risk_analysis(Json(req): Json<LiquidityRiskRequest>) -> impl IntoResponse {
+    let horizon = req.horizon_days.unwrap_or(30);
+    // Estimated dip based on mock burn pattern
+    let estimated_dip = req.current_balance - (3_000.0 * 8.0) - (42_500.0 * 4.0);
+    let risk_level = if estimated_dip < 0.0 {
+        "Critical"
+    } else if estimated_dip < 50_000.0 {
+        "Warning"
+    } else {
+        "Healthy"
+    };
+
+    Json(serde_json::json!({
+        "current_balance": req.current_balance,
+        "horizon_days": horizon,
+        "risk_level": risk_level,
+        "dip_window": {
+            "start_day": 9,
+            "end_day": 12,
+            "estimated_min_balance": (estimated_dip * 100.0).round() / 100.0
+        },
+        "recovery_day": 20,
+        "recovery_confidence": 0.75,
+        "recommendations": [
+            "Säkerställ att kundbetalningar är bekräftade senast dag 13",
+            "Överväg kreditfacilitet för att täcka dag 9-12 dip",
+            "Granska utgående betalningar för att optimera kassaflöde"
+        ],
+        "analysed_at": Utc::now()
+    }))
+}
+
+// ─────────────────────────────────────────────
+// CREDIT EVALUATE
+// ─────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct CreditEvaluateRequest {
+    pub current_balance: f64,
+    pub company_name: Option<String>,
+}
+
+async fn credit_evaluate(Json(req): Json<CreditEvaluateRequest>) -> impl IntoResponse {
+    let company = req.company_name.clone().unwrap_or_else(|| "LandveX AB".to_string());
+    let credit_amount = 150_000.0_f64;
+    let duration_days = 30_u32;
+    let daily_fee_rate = 0.0008_f64;
+    let total_fee = credit_amount * daily_fee_rate * duration_days as f64;
+    let apr = daily_fee_rate * 365.0 * 100.0;
+
+    Json(serde_json::json!({
+        "company": company,
+        "decision": "Approve",
+        "credit_grade": "B",
+        "credit_amount": credit_amount,
+        "currency": "SEK",
+        "duration_days": duration_days,
+        "daily_fee_rate": daily_fee_rate,
+        "total_fee": (total_fee * 100.0).round() / 100.0,
+        "apr_percent": (apr * 100.0).round() / 100.0,
+        "offer_text": format!(
+            "Kreditbeslut för {}\n\nVi har granskat er ekonomiska situation och godkänner en \
+            kortfristig kreditfacilitet om 150 000 SEK under 30 dagar.\n\n\
+            Daglig avgift: 0,08% av utestående belopp\n\
+            Total avgift vid fullt utnyttjande: 3 600 SEK\n\
+            Effektiv ränta (APR): ~33,6%\n\n\
+            Erbjudandet är giltigt i 48 timmar och kan nyttjas direkt via er Kvittovalvet-portal.",
+            company
+        ),
+        "recovery_basis": "Recurring revenue + seasonal pattern",
+        "confidence_score": 0.72,
+        "offer_expires_at": Utc::now() + chrono::Duration::hours(48),
+        "evaluated_at": Utc::now()
+    }))
+}
+
+// ─────────────────────────────────────────────
+// LIST CREDIT OFFERS
+// ─────────────────────────────────────────────
+
+async fn list_credit_offers() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "offers": [],
+        "total": 0,
+        "message": "Inga aktiva kreditofferter. POST /credit/evaluate för att skapa en."
+    }))
+}
+
+// ─────────────────────────────────────────────
+// MERCHANTS LIST
+// ─────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct MerchantQuery {
+    pub category: Option<String>,
+    pub limit: Option<usize>,
+}
+
+async fn list_merchants_api(Query(q): Query<MerchantQuery>) -> impl IntoResponse {
+    let limit = q.limit.unwrap_or(50).min(100);
+    let filter_category = q.category.as_deref().map(|s| s.to_uppercase());
+
+    let all_merchants = vec![
+        serde_json::json!({ "merchant_id": "ICA", "display_name": "ICA Gruppen", "category": "DAGLIGVAROR", "has_api_access": false, "bank_aliases": ["ICA SUPERMARKET", "ICA NARA", "ICA KVANTUM", "ICA MAXI"] }),
+        serde_json::json!({ "merchant_id": "COOP", "display_name": "Coop Sverige", "category": "DAGLIGVAROR", "has_api_access": false, "bank_aliases": ["COOP", "COOP FORUM", "COOP EXTRA"] }),
+        serde_json::json!({ "merchant_id": "HEMKOP", "display_name": "Hemköp", "category": "DAGLIGVAROR", "has_api_access": false, "bank_aliases": ["HEMKOP", "HK"] }),
+        serde_json::json!({ "merchant_id": "SYSTEMBOLAGET", "display_name": "Systembolaget", "category": "DAGLIGVAROR", "has_api_access": false, "bank_aliases": ["SYSTEMBOLAGET"] }),
+        serde_json::json!({ "merchant_id": "PRESSBYRAAN", "display_name": "Pressbyrån", "category": "DAGLIGVAROR", "has_api_access": false, "bank_aliases": ["PRESSBYRAN", "PRESSBYRAAN"] }),
+        serde_json::json!({ "merchant_id": "SJ", "display_name": "SJ AB", "category": "TRANSPORT", "has_api_access": true, "bank_aliases": ["SJ", "SJ.SE"] }),
+        serde_json::json!({ "merchant_id": "SL", "display_name": "SL – Storstockholms Lokaltrafik", "category": "TRANSPORT", "has_api_access": false, "bank_aliases": ["SL", "STORSTOCKHOLMS LOKALTRAFIK"] }),
+        serde_json::json!({ "merchant_id": "FLIXBUS", "display_name": "FlixBus", "category": "TRANSPORT", "has_api_access": false, "bank_aliases": ["FLIXBUS", "FLIX SE"] }),
+        serde_json::json!({ "merchant_id": "RYANAIR", "display_name": "Ryanair", "category": "TRANSPORT", "has_api_access": false, "bank_aliases": ["RYANAIR", "RYANAIR DAC"] }),
+        serde_json::json!({ "merchant_id": "NETFLIX", "display_name": "Netflix", "category": "PRENUMERATION", "has_api_access": false, "bank_aliases": ["NETFLIX", "NETFLIX.COM"] }),
+        serde_json::json!({ "merchant_id": "SPOTIFY", "display_name": "Spotify", "category": "PRENUMERATION", "has_api_access": false, "bank_aliases": ["SPOTIFY", "SPOTIFY AB"] }),
+        serde_json::json!({ "merchant_id": "MICROSOFT", "display_name": "Microsoft / Office 365", "category": "PRENUMERATION", "has_api_access": false, "bank_aliases": ["MICROSOFT", "MSFT*", "MICROSOFT 365"] }),
+        serde_json::json!({ "merchant_id": "ADOBE", "display_name": "Adobe Inc.", "category": "PRENUMERATION", "has_api_access": false, "bank_aliases": ["ADOBE", "ADOBE SYSTEMS"] }),
+        serde_json::json!({ "merchant_id": "TELIA", "display_name": "Telia Company", "category": "TELECOM", "has_api_access": false, "bank_aliases": ["TELIA", "TELIA SE"] }),
+        serde_json::json!({ "merchant_id": "TELE2", "display_name": "Tele2 Sverige", "category": "TELECOM", "has_api_access": false, "bank_aliases": ["TELE2", "TELE2 AB"] }),
+        serde_json::json!({ "merchant_id": "THREE", "display_name": "Tre / Hi3G", "category": "TELECOM", "has_api_access": false, "bank_aliases": ["TRE", "HI3G", "3 SVERIGE"] }),
+        serde_json::json!({ "merchant_id": "ELGIGANTEN", "display_name": "Elgiganten", "category": "ELEKTRONIK", "has_api_access": false, "bank_aliases": ["ELGIGANTEN", "ELGIGANTEN AB"] }),
+        serde_json::json!({ "merchant_id": "MEDIAMARKT", "display_name": "MediaMarkt", "category": "ELEKTRONIK", "has_api_access": false, "bank_aliases": ["MEDIAMARKT", "MEDIA MARKT"] }),
+        serde_json::json!({ "merchant_id": "APOTEKET", "display_name": "Apoteket AB", "category": "HALSA", "has_api_access": false, "bank_aliases": ["APOTEKET", "APOTEKET AB"] }),
+        serde_json::json!({ "merchant_id": "KRONANS_APOTEK", "display_name": "Kronans Apotek", "category": "HALSA", "has_api_access": false, "bank_aliases": ["KRONANS APOTEK", "KRONANS DROGHANDEL"] }),
+    ];
+
+    let filtered: Vec<_> = all_merchants.into_iter()
+        .filter(|m| {
+            if let Some(ref cat) = filter_category {
+                m["category"].as_str().map(|c| c == cat.as_str()).unwrap_or(false)
+            } else {
+                true
+            }
+        })
+        .take(limit)
+        .collect();
+
+    Json(serde_json::json!({
+        "merchants": filtered,
+        "total": filtered.len(),
+        "filter": { "category": q.category, "limit": limit }
+    }))
+}
+
+// ─────────────────────────────────────────────
+// VRF VERIFY
+// ─────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct VrfVerifyRequest {
+    pub receipt: serde_json::Value,
+}
+
+async fn vrf_verify(Json(req): Json<VrfVerifyRequest>) -> impl IntoResponse {
+    // Mock VRF verification – in production: cryptographic proof verification
+    let has_id = req.receipt.get("id").is_some()
+        || req.receipt.get("receipt_id").is_some()
+        || req.receipt.get("transaction_id").is_some();
+
+    Json(serde_json::json!({
+        "valid": true,
+        "signature_valid": has_id,
+        "hash_matches": true,
+        "issuer": "Kvittovalvet Test",
+        "vrf_proof": "mock_vrf_proof_a1b2c3d4e5f6",
+        "verified_at": Utc::now(),
+        "note": "Mock verification – integrate with real VRF in production"
+    }))
+}
+
+// ─────────────────────────────────────────────
+// GRAPH STATS
+// ─────────────────────────────────────────────
+
+async fn graph_stats() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "total_nodes": 106,
+        "total_edges": 312,
+        "node_types": {
+            "merchants": 53,
+            "suppliers": 8,
+            "companies": 3,
+            "persons": 24,
+            "accounts": 12,
+            "invoices": 6
+        },
+        "edge_types": {
+            "transacted_with": 189,
+            "supplies": 42,
+            "owns": 18,
+            "issued": 63
+        },
+        "graph_density": 0.028,
+        "largest_connected_component": 98,
+        "avg_degree": 5.89,
+        "generated_at": Utc::now()
     }))
 }

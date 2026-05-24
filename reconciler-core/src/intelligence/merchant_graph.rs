@@ -249,7 +249,7 @@ impl MerchantIntelligence {
             // Update existing profile
             profile.default_account_code = account_code.to_string();
             profile.typical_vat_rate = vat_rate;
-            self.update_amount_stats_internal(profile, amount);
+            Self::update_amount_stats_internal(profile, amount);
             profile.transaction_count += 1;
             profile.last_seen = Utc::now();
             profile.booking_confidence = (profile.booking_confidence + 0.05).min(1.0);
@@ -324,7 +324,7 @@ impl MerchantIntelligence {
     /// Update running statistics for an existing merchant by UUID.
     pub fn update_stats(&mut self, canonical_id: Uuid, amount: Decimal) {
         if let Some(profile) = self.merchants.values_mut().find(|p| p.canonical_id == canonical_id) {
-            self.update_amount_stats_internal(profile, amount);
+            Self::update_amount_stats_internal(profile, amount);
             profile.transaction_count += 1;
             profile.last_seen = Utc::now();
         }
@@ -457,7 +457,7 @@ impl MerchantIntelligence {
     }
 
     /// Welford online algorithm for running mean and variance updates.
-    fn update_amount_stats_internal(&self, profile: &mut MerchantProfile, amount: Decimal) {
+    fn update_amount_stats_internal(profile: &mut MerchantProfile, amount: Decimal) {
         let n = Decimal::from(profile.transaction_count + 1);
         let old_mean = profile.typical_amount_range.typical;
         let new_mean = old_mean + (amount - old_mean) / n;

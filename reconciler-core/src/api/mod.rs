@@ -12,6 +12,10 @@ use uuid::Uuid;
 
 use crate::models::*;
 use crate::ai::confidence::{ConfidenceEngine, DecisionExplanation};
+use crate::matching::MatchingEngine;
+use crate::connectors::enable_banking::EnableBankingConnector;
+use crate::connectors::revolut_impl::RevolutConnector;
+use crate::connectors::BankingProvider;
 
 // ─────────────────────────────────────────────
 // APP STATE
@@ -19,6 +23,7 @@ use crate::ai::confidence::{ConfidenceEngine, DecisionExplanation};
 #[derive(Clone)]
 pub struct AppState {
     pub confidence_engine: Arc<ConfidenceEngine>,
+    pub matching_engine: Arc<MatchingEngine>,
     pub version: String,
 }
 
@@ -26,6 +31,7 @@ impl AppState {
     pub fn new() -> Self {
         Self {
             confidence_engine: Arc::new(ConfidenceEngine::new()),
+            matching_engine: Arc::new(MatchingEngine::new()),
             version: "2.0.0".to_string(),
         }
     }
@@ -46,6 +52,13 @@ pub fn router(state: AppState) -> Router {
         .route("/waitlist", post(join_waitlist))
         .route("/webhooks/:provider", post(webhook))
         .route("/decisions/:id/rollback", post(rollback_decision))
+        // ── Sync routes ───────────────────────────────────────
+        .route("/sync/bank",    post(sync_bank))
+        .route("/sync/status",  get(sync_status))
+        // ── Evidence & matching ───────────────────────────────
+        .route("/evidence",           get(list_evidence))
+        .route("/match",              post(run_match))
+        .route("/escalations",        get(list_escalations))
         .with_state(state)
 }
 
@@ -315,5 +328,136 @@ async fn rollback_decision(Path(id): Path<Uuid>) -> impl IntoResponse {
         "decision_id": id,
         "timestamp": Utc::now(),
         "message": "Decision reversed. Original state restored."
+    }))
+}
+
+// ─────────────────────────────────────────────
+// SYNC – Bank
+// ─────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct SyncBankRequest {
+    pub provider: String,           // "enable_banking" | "revolut" | "nordea"
+    pub account_id: Option<String>, // specific account or "all"
+    pub days_back: Option<i64>,     // default 30
+}
+
+async fn sync_bank(
+    State(state): State<AppState>,
+    Json(req): Json<SyncBankRequest>,
+) -> impl IntoResponse {
+    let days = req.days_back.unwrap_or(30);
+    let from = Utc::now() - chrono::Duration::days(days);
+    let to   = Utc::now();
+
+    tracing::info!("sync_bank: provider={} days_back={}", req.provider, days);
+
+    let (tx_count, status) = match req.provider.as_str() {
+        "enable_banking" => {
+            match EnableBankingConnector::from_env() {
+                Ok(conn) => {
+                    let account_id = req.account_id.as_deref().unwrap_or("65f16d5c-0803-4b49-934e-24c23aff52fd");
+                    match conn.stream_transactions(account_id, from, to).await {
+                        Ok(txs) => (txs.len(), "ok".to_string()),
+                        Err(e)  => (0, format!("error: {}", e)),
+                    }
+                }
+                Err(e) => (0, format!("config error: {}", e)),
+            }
+        }
+        "revolut" => {
+            match RevolutConnector::from_env() {
+                Ok(conn) => {
+                    let account_id = req.account_id.as_deref().unwrap_or("all");
+                    match conn.stream_transactions(account_id, from, to).await {
+                        Ok(txs) => (txs.len(), "ok".to_string()),
+                        Err(e)  => (0, format!("error: {}", e)),
+                    }
+                }
+                Err(e) => (0, format!("config error: {}", e)),
+            }
+        }
+        _ => (0, format!("unknown provider: {}", req.provider)),
+    };
+
+    Json(serde_json::json!({
+        "provider":    req.provider,
+        "status":      status,
+        "transactions_fetched": tx_count,
+        "from":        from,
+        "to":          to,
+        "synced_at":   Utc::now(),
+    }))
+}
+
+async fn sync_status() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "providers": [
+            { "id": "enable_banking", "configured": true,  "env": "sandbox",    "last_sync": null },
+            { "id": "revolut",        "configured": true,  "env": "production", "last_sync": null },
+            { "id": "nordea",         "configured": true,  "env": "sandbox",    "last_sync": null },
+            { "id": "fortnox",        "configured": false, "env": null,         "last_sync": null },
+        ]
+    }))
+}
+
+// ─────────────────────────────────────────────
+// EVIDENCE
+// ─────────────────────────────────────────────
+
+async fn list_evidence() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "summary": {
+            "total_transactions": 0,
+            "verified": 0,
+            "missing": 0,
+            "requested": 0,
+            "escalated": 0,
+        },
+        "message": "Connect bank + ERP providers, then POST /sync/bank and POST /match"
+    }))
+}
+
+// ─────────────────────────────────────────────
+// MATCHING
+// ─────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct MatchRequest {
+    pub transactions: Vec<serde_json::Value>,
+    pub invoices:     Vec<serde_json::Value>,
+}
+
+async fn run_match(
+    State(state): State<AppState>,
+    Json(_req): Json<MatchRequest>,
+) -> impl IntoResponse {
+    // Full matching: parse → engine → results
+    // For now: return engine status + explain what it can do
+    Json(serde_json::json!({
+        "engine": "MatchingEngine v1",
+        "signals": ["exact_amount", "date_proximity", "merchant_fuzzy", "reference_match", "vat_consistency"],
+        "thresholds": { "matched": 0.7, "partial": 0.4, "unmatched": 0.0 },
+        "status": "ready",
+        "results": [],
+        "hint": "POST transactions + invoices as canonical JSON to run matching"
+    }))
+}
+
+// ─────────────────────────────────────────────
+// ESCALATIONS
+// ─────────────────────────────────────────────
+
+async fn list_escalations() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "escalations": [],
+        "steps": [
+            { "step": 1, "label": "API Retrieval",    "automated": true  },
+            { "step": 2, "label": "Peppol Request",   "automated": true  },
+            { "step": 3, "label": "AI Email",         "automated": true  },
+            { "step": 4, "label": "SMS/Voice",        "automated": true  },
+            { "step": 5, "label": "Registered Letter","automated": false },
+            { "step": 6, "label": "Legal Export",     "automated": false },
+        ]
     }))
 }

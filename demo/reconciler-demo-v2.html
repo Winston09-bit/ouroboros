@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reconciler — Live Demo · Autonom kontoutstämning</title>
+<style>
+  :root {
+    --black: #0A0A0A;
+    --white: #FAFAFA;
+    --accent: #1A6B3A;
+    --accent-soft: #EFF8F2;
+    --accent-border: #A8D5B5;
+    --accent-light: #5BC47A;
+    --accent2: #1A4A6B;
+    --gray: #6B6B6B;
+    --gray-light: #9A9A9A;
+    --light: #F5F4F1;
+    --border: #E0DDD8;
+    --border-soft: #ECEAE5;
+    --warn: #8A6400;
+    --warn-bg: #F6EFDF;
+    --neg: #9A2C2C;
+    --neg-bg: #F4E7E7;
+    --info: #1B4E8A;
+    --info-bg: #E6EDF5;
+    --ai: #4B3B80;
+    --ai-bg: #ECE9F5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--black);
+    background: var(--white);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* === ONBOARDING OVERLAY === */
+  .onboard {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--white);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 0.5s ease;
+  }
+  .onboard.hide { opacity: 0; pointer-events: none; }
+  .onboard-inner { max-width: 520px; padding: 40px; text-align: center; }
+  .onboard .logo {
+    font-size: 28px; font-weight: 700; letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .onboard .logo span { color: var(--accent); }
+  .onboard .sub {
+    font-size: 13px; color: var(--gray); margin-bottom: 36px;
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .onboard-list {
+    text-align: left; display: flex; flex-direction: column; gap: 14px;
+    margin-bottom: 32px;
+  }
+  .ob-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; background: var(--light); border-radius: 10px;
+    font-size: 14px; opacity: 0.35; transition: all 0.4s;
+  }
+  .ob-item.active { opacity: 1; background: #fff; border: 1px solid var(--border); }
+  .ob-item.done { opacity: 1; background: var(--accent-soft); border: 1px solid var(--accent-border); }
+  .ob-item .ico {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--border); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+  }
+  .ob-item.active .ico { background: var(--black); }
+  .ob-item.active .ico::after {
+    content: ""; width: 8px; height: 8px; background: #fff;
+    border-radius: 50%; animation: pulse 1s infinite;
+  }
+  .ob-item.done .ico { background: var(--accent); }
+  .ob-item.done .ico::after { content: "✓"; color: #fff; }
+  .ob-item .label { flex: 1; font-weight: 500; }
+  .ob-item .meta { font-size: 12px; color: var(--gray); }
+  .onboard-cta {
+    background: var(--black); color: #fff;
+    padding: 14px 32px; border-radius: 8px;
+    font-size: 15px; font-weight: 600;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .onboard-cta.show { opacity: 1; pointer-events: auto; }
+  .onboard-cta:hover { background: #222; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }
+
+  /* === APP LAYOUT === */
+  .app { display: grid; grid-template-rows: 56px 1fr; height: 100vh; }
+  .topbar {
+    display: flex; align-items: center; gap: 24px;
+    background: var(--black); color: #fff;
+    padding: 0 24px;
+    border-bottom: 1px solid #000;
+  }
+  .topbar .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-weight: 700; font-size: 16px; letter-spacing: -0.3px;
+  }
+  .topbar .brand span { color: var(--accent-light); }
+  .topbar .badge {
+    background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    padding: 3px 8px; border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .topbar .sep { width: 1px; height: 24px; background: rgba(255,255,255,0.15); }
+  .tstat { display: flex; flex-direction: column; line-height: 1.1; }
+  .tstat .k { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); font-weight: 600; }
+  .tstat .v { font-size: 14px; font-weight: 600; margin-top: 3px; font-family: ui-monospace, monospace; }
+  .tstat .v.green { color: var(--accent-light); }
+  .topbar .spacer { flex: 1; }
+  .top-cta {
+    background: var(--accent); color: #fff;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+  }
+  .top-cta:hover { background: #155a30; }
+  .top-back {
+    color: rgba(255,255,255,0.7); font-size: 13px;
+    padding: 8px 12px; border-radius: 6px;
+  }
+  .top-back:hover { color: #fff; background: rgba(255,255,255,0.06); }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent-light);
+    animation: livedot 1.6s infinite;
+  }
+  @keyframes livedot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(91,196,122,0.5); }
+    50% { opacity: 0.6; box-shadow: 0 0 0 6px rgba(91,196,122,0); }
+  }
+
+  /* === BODY === */
+  .body { display: grid; grid-template-columns: 220px 1fr; overflow: hidden; }
+  .nav {
+    background: var(--white); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 12px 0;
+    overflow-y: auto;
+  }
+  .nav .grp {
+    padding: 14px 18px 8px;
+    font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--gray-light);
+    font-weight: 700;
+  }
+  .navitem {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 18px;
+    font-size: 13.5px; color: var(--gray);
+    border-left: 3px solid transparent;
+    transition: all 0.12s; font-weight: 500;
+    width: 100%; text-align: left;
+  }
+  .navitem:hover { background: var(--light); color: var(--black); }
+  .navitem.active {
+    background: var(--accent-soft);
+    color: var(--black);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .navitem .ico { width: 18px; font-size: 15px; flex-shrink: 0; opacity: 0.8; }
+  .navitem.active .ico { opacity: 1; }
+  .navitem .count {
+    margin-left: auto; font-size: 11px; font-weight: 700;
+    background: var(--border); color: var(--gray);
+    padding: 1px 8px; border-radius: 10px;
+    font-family: ui-monospace, monospace;
+  }
+  .navitem.active .count { background: var(--accent); color: #fff; }
+  .navitem .count.warn { background: var(--warn-bg); color: var(--warn); }
+  .nav .foot {
+    margin-top: auto;
+    padding: 16px 18px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--gray-light);
+    line-height: 1.5;
+  }
+  .nav .foot strong { color: var(--gray); font-weight: 600; }
+
+  /* === MAIN === */
+  .main {
+    overflow-y: auto; padding: 24px 32px 60px;
+    background: var(--white);
+  }
+  .page-h {
+    display: flex; align-items: flex-end; gap: 18px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-h h1 {
+    font-size: 26px; font-weight: 700; letter-spacing: -0.5px;
+  }
+  .page-h .sub {
+    font-size: 13px; color: var(--gray); margin-bottom: 4px;
+  }
+  .page-h .num {
+    margin-left: auto; font-size: 11px;
+    color: var(--gray-light); letter-spacing: 0.1em;
+    text-transform: uppercase; font-weight: 600;
+    font-family: ui-monospace, monospace;
+  }
+
+  /* === KPI CARDS === */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+  }
+  .kpi .lab {
+    font-size: 10px; color: var(--gray);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    font-weight: 700; margin-bottom: 12px;
+  }
+  .kpi .val {
+    font-size: 32px; font-weight: 700; letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .kpi .val.green { color: var(--accent); }
+  .kpi .val small { font-size: 16px; color: var(--gray); font-weight: 500; margin-left: 4px; }
+  .kpi .meta {
+    font-size: 11.5px; color: var(--gray);
+    margin-top: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .kpi .meta .up { color: var(--accent); font-weight: 600; }
+  .kpi.dark { background: var(--black); color: #fff; border-color: var(--black); }
+  .kpi.dark .lab { color: rgba(255,255,255,0.5); }
+  .kpi.dark .val { color: var(--accent-light); }
+  .kpi.dark .meta { color: rgba(255,255,255,0.6); }
+
+  /* === GRIDS === */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 1100px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  /* === CARD === */
+  .card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .card .hd {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border-soft);
+  }
+  .card .hd h3 {
+    font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray);
+    font-weight: 700;
+  }
+  .card .hd .right { font-size: 11px; color: var(--gray-light); font-family: ui-monospace, monospace; }
+  .card .bd { padding: 16px 18px; }
+  .card.green-tint { background: var(--accent-soft); border-color: var(--accent-border); }
+
+  /* === EVENT FEED === */
+  .feed { max-height: 320px; overflow-y: auto; }
+  .feed-item {
+    display: flex; gap: 12px; padding: 10px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 12.5px;
+    animation: slidein 0.4s ease;
+  }
+  .feed-item:last-child { border-bottom: none; }
+  @keyframes slidein { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  .feed-item .t { font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--gray-light); white-space: nowrap; padding-top: 1px; }
+  .feed-item .tag {
+    font-size: 9.5px; font-weight: 700;
+    padding: 2px 7px; border-radius: 3px;
+    white-space: nowrap; align-self: flex-start;
+    letter-spacing: 0.04em;
+  }
+  .feed-item .msg { flex: 1; color: var(--gray); line-height: 1.45; }
+  .feed-item .msg b { color: var(--black); font-weight: 600; }
+  .tag.evt { background: var(--info-bg); color: var(--info); }
+  .tag.ok { background: var(--accent-soft); color: var(--accent); }
+  .tag.warn { background: var(--warn-bg); color: var(--warn); }
+  .tag.err { background: var(--neg-bg); color: var(--neg); }
+  .tag.ai { background: var(--ai-bg); color: var(--ai); }
+
+  /* === GAUGE === */
+  .gauge-wrap { display: flex; align-items: center; gap: 22px; padding: 8px 0; }
+  .gauge { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge .ctr { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .gauge .ctr .big { font-size: 30px; font-weight: 700; letter-spacing: -0.5px; }
+  .gauge .ctr .lil { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray); font-weight: 700; margin-top: 2px; }
+  .gauge-legend { flex: 1; }
+  .gauge-legend div { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--gray); padding: 4px 0; }
+  .gauge-legend .sw { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .gauge-legend .n { margin-left: auto; font-family: ui-monospace, monospace; font-weight: 700; color: var(--black); }
+
+  /* === SOLUTIONS VIEW === */
+  .sol-header {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .sol-counter {
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 14px; color: var(--gray);
+  }
+  .sol-counter .big {
+    font-size: 26px; font-weight: 700; color: var(--accent);
+    letter-spacing: -0.3px; line-height: 1;
+  }
+  .sol-filters { display: flex; gap: 8px; margin-left: auto; }
+  .sol-filter {
+    font-size: 12px; font-weight: 600;
+    padding: 7px 14px; border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--gray); background: #fff;
+    transition: all 0.12s;
+  }
+  .sol-filter:hover { border-color: var(--gray); color: var(--black); }
+  .sol-filter.active {
+    background: var(--black); color: #fff; border-color: var(--black);
+  }
+  .sol-list { display: flex; flex-direction: column; gap: 12px; }
+  .sol-item {
+    display: grid; grid-template-columns: 36px 1fr auto;
+    gap: 16px; padding: 16px 20px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 12px; align-items: flex-start;
+    transition: all 0.15s;
+    animation: solslide 0.5s ease;
+  }
+  @keyframes solslide { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+  .sol-item:hover { border-color: var(--gray-light); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .sol-item.auto { border-left: 4px solid var(--accent); }
+  .sol-item.pending { border-left: 4px solid var(--warn); background: var(--warn-bg); }
+  .sol-item.escalated { border-left: 4px solid var(--neg); }
+  .sol-ico {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700;
+  }
+  .sol-item.pending .sol-ico { background: var(--warn-bg); color: var(--warn); }
+  .sol-item.escalated .sol-ico { background: var(--neg-bg); color: var(--neg); }
+  .sol-body { min-width: 0; }
+  .sol-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .sol-type {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px; border-radius: 4px;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .sol-item.pending .sol-type { background: var(--warn-bg); color: var(--warn); }
+  .sol-item.escalated .sol-type { background: var(--neg-bg); color: var(--neg); }
+  .sol-title {
+    font-size: 14px; font-weight: 600; color: var(--black);
+  }
+  .sol-amount { font-family: ui-monospace, monospace; font-weight: 700; color: var(--black); }
+  .sol-problem { font-size: 13px; color: var(--gray); margin-top: 4px; }
+  .sol-problem b { color: var(--black); }
+  .sol-solution { font-size: 13px; color: var(--gray); margin-top: 6px; line-height: 1.5; }
+  .sol-solution::before { content: "→ "; color: var(--accent); font-weight: 700; }
+  .sol-item.pending .sol-solution::before { color: var(--warn); }
+  .sol-meta {
+    text-align: right; font-size: 11px; color: var(--gray-light);
+    line-height: 1.5; white-space: nowrap;
+  }
+  .sol-meta .agent { color: var(--ai); font-weight: 600; }
+  .sol-meta .time { font-family: ui-monospace, monospace; font-weight: 700; color: var(--black); }
+
+  /* === AP PIPELINE === */
+  .pipeline {
+    display: flex; align-items: stretch;
+    background: var(--black); color: #fff;
+    border-radius: 12px; padding: 24px; margin-bottom: 20px;
+    overflow-x: auto;
+  }
+  .pipe-step {
+    flex: 1; min-width: 130px;
+    text-align: center; padding: 0 12px;
+    display: flex; flex-direction: column; gap: 8px; align-items: center;
+    position: relative;
+  }
+  .pipe-step .icn {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.4s;
+  }
+  .pipe-step.active .icn {
+    background: var(--accent); border-color: var(--accent);
+    box-shadow: 0 0 0 0 var(--accent);
+    animation: pipeglow 1.2s infinite;
+  }
+  @keyframes pipeglow {
+    0%,100% { box-shadow: 0 0 0 0 rgba(26,107,58,0.6); }
+    50% { box-shadow: 0 0 0 12px rgba(26,107,58,0); }
+  }
+  .pipe-step.done .icn { background: var(--accent); border-color: var(--accent); }
+  .pipe-step .lbl {
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .pipe-step .sub {
+    font-size: 10px; color: rgba(255,255,255,0.5);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .pipe-arrow {
+    display: flex; align-items: center; padding: 0 4px;
+    color: rgba(255,255,255,0.3); font-size: 22px;
+    font-weight: 700;
+  }
+  .pipe-step.done ~ .pipe-arrow { color: var(--accent-light); }
+
+  .ap-current {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 14px 18px; margin-top: 18px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 12px;
+    color: rgba(255,255,255,0.8);
+  }
+  .ap-current b { color: var(--accent-light); }
+
+  /* === TXN TABLE === */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray); font-weight: 700;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    background: var(--light);
+    position: sticky; top: 0;
+  }
+  thead th.r { text-align: right; }
+  tbody td { padding: 12px 16px; border-bottom: 1px solid var(--border-soft); color: var(--gray); }
+  tbody td.r { text-align: right; font-family: ui-monospace, monospace; }
+  tbody tr { transition: background 0.1s; cursor: pointer; }
+  tbody tr:hover { background: var(--light); }
+  .merch-cell { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--light); color: var(--black);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 11px;
+    flex-shrink: 0; font-family: ui-monospace, monospace;
+    border: 1px solid var(--border);
+  }
+  .merch-name { color: var(--black); font-weight: 500; }
+  .merch-sub { font-size: 10.5px; color: var(--gray-light); margin-top: 1px; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600;
+    padding: 3px 9px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .pill .pd { width: 6px; height: 6px; border-radius: 50%; }
+  .pill.booked { background: var(--accent-soft); color: var(--accent); }
+  .pill.booked .pd { background: var(--accent); }
+  .pill.review { background: var(--warn-bg); color: var(--warn); }
+  .pill.review .pd { background: var(--warn); }
+  .pill.processing { background: var(--info-bg); color: var(--info); }
+  .pill.processing .pd { background: var(--info); animation: livedot 1.3s infinite; }
+  .pill.recovering { background: var(--ai-bg); color: var(--ai); }
+  .pill.recovering .pd { background: var(--ai); animation: livedot 1.3s infinite; }
+  .pill.fixed { background: var(--accent-soft); color: var(--accent); }
+  .pill.fixed .pd { background: var(--accent); }
+
+  .conf-bar {
+    display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+  }
+  .conf-bar .bar { width: 48px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .conf-bar .bar i { display: block; height: 100%; background: var(--accent); }
+  .conf-bar.low .bar i { background: var(--warn); }
+  .conf-bar.bad .bar i { background: var(--neg); }
+  .conf-bar .pct { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; color: var(--black); width: 42px; text-align: right; }
+
+  /* === AGENTS === */
+  .agent-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  @media (max-width: 1100px) { .agent-grid { grid-template-columns: 1fr; } }
+  .agent {
+    display: flex; gap: 14px; padding: 18px;
+    border: 1px solid var(--border); border-radius: 12px;
+    background: #fff; transition: all 0.15s;
+  }
+  .agent.busy { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .agent .av {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--black); color: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0; font-weight: 700;
+  }
+  .agent.busy .av { animation: agentglow 1.5s infinite; }
+  @keyframes agentglow {
+    0%,100% { box-shadow: 0 0 0 0 rgba(26,107,58,0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(26,107,58,0); }
+  }
+  .agent .info { flex: 1; min-width: 0; }
+  .agent .nm { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+  .agent .nm .led {
+    font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 10px; background: var(--border); color: var(--gray);
+    font-weight: 700;
+  }
+  .agent.busy .nm .led { background: var(--accent-soft); color: var(--accent); }
+  .agent .ds { font-size: 12px; color: var(--gray); margin-top: 4px; line-height: 1.5; }
+  .agent .st { font-size: 11.5px; color: var(--gray); margin-top: 8px; min-height: 17px; font-style: italic; }
+  .agent .st b { color: var(--black); font-style: normal; font-weight: 600; }
+  .agent .stats { display: flex; gap: 18px; margin-top: 12px; }
+  .agent .stats div { display: flex; flex-direction: column; }
+  .agent .stats .n { font-size: 18px; font-weight: 700; line-height: 1; font-family: ui-monospace, monospace; }
+  .agent .stats .l { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray); font-weight: 700; margin-top: 3px; }
+
+  /* === EMPTY === */
+  .empty {
+    text-align: center; padding: 50px 20px; color: var(--gray-light);
+  }
+  .empty .big { font-size: 16px; color: var(--gray); font-weight: 600; margin-bottom: 6px; }
+
+  /* === MOBILE === */
+  @media (max-width: 900px) {
+    .body { grid-template-columns: 60px 1fr; }
+    .navitem .lbl { display: none; }
+    .navitem { justify-content: center; }
+    .navitem .count { display: none; }
+    .nav .grp { text-align: center; padding: 14px 4px 8px; }
+    .nav .foot { display: none; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .main { padding: 16px; }
+    .topbar { gap: 12px; padding: 0 14px; }
+    .topbar .tstat { display: none; }
+    .topbar .sep { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============= ONBOARDING ============= -->
+<div class="onboard" id="onboard">
+  <div class="onboard-inner">
+    <div class="logo">Reconciler<span>.</span></div>
+    <div class="sub">Demo · Live Sandbox</div>
+    <div class="onboard-list">
+      <div class="ob-item" data-ob="0">
+        <div class="ico"></div>
+        <div class="label">Ansluter Nordea Business</div>
+        <div class="meta">PSD2 · OAuth</div>
+      </div>
+      <div class="ob-item" data-ob="1">
+        <div class="ico"></div>
+        <div class="label">Ansluter Fortnox</div>
+        <div class="meta">ERP-koppling</div>
+      </div>
+      <div class="ob-item" data-ob="2">
+        <div class="ico"></div>
+        <div class="label">Läser in transaktioner</div>
+        <div class="meta" id="ob-tx">— st</div>
+      </div>
+      <div class="ob-item" data-ob="3">
+        <div class="ico"></div>
+        <div class="label">Konfigurerar AI-agenter</div>
+        <div class="meta">6 agenter</div>
+      </div>
+    </div>
+    <button class="onboard-cta" id="obStart">Starta demo →</button>
+  </div>
+</div>
+
+<!-- ============= APP ============= -->
+<div class="app" style="visibility:hidden" id="app">
+  <header class="topbar">
+    <div class="brand">Reconciler<span>.</span></div>
+    <div class="badge">Live Demo</div>
+    <div class="sep"></div>
+    <div class="tstat"><span class="k">Inflöde idag</span><span class="v" id="t-tx">0 tx</span></div>
+    <div class="sep"></div>
+    <div class="tstat"><span class="k">Auto-lösta</span><span class="v green" id="t-auto">0%</span></div>
+    <div class="sep"></div>
+    <div class="tstat"><span class="k">Lösningar</span><span class="v green" id="t-sol">0</span></div>
+    <div class="spacer"></div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,0.7)">
+      <div class="live-dot"></div>
+      <span class="mono" id="t-clock">--:--:--</span>
+    </div>
+    <a href="/reconciler/" class="top-back">← Reconciler</a>
+    <a href="/reconciler/#waitlist" class="top-cta">Kom igång gratis</a>
+  </header>
+
+  <div class="body">
+    <nav class="nav">
+      <div class="grp">Översikt</div>
+      <button class="navitem active" data-view="cockpit"><span class="ico">◐</span><span class="lbl">Cockpit</span></button>
+      <button class="navitem" data-view="solutions"><span class="ico">✓</span><span class="lbl">Lösningar</span><span class="count" id="n-sol">0</span></button>
+
+      <div class="grp">Operations</div>
+      <button class="navitem" data-view="ledger"><span class="ico">≡</span><span class="lbl">Transaktioner</span><span class="count" id="n-tx">0</span></button>
+      <button class="navitem" data-view="ap"><span class="ico">📬</span><span class="lbl">AP Automation</span></button>
+      <button class="navitem" data-view="agents"><span class="ico">⚙</span><span class="lbl">AI Agenter</span><span class="count">6</span></button>
+      <button class="navitem" data-view="events"><span class="ico">⇅</span><span class="lbl">Händelseström</span></button>
+
+      <div class="foot">
+        <strong>Sandbox-läge</strong><br>
+        Anonymiserad data från svenska SMB-bolag.<br>
+        Inget kreditkort.<br>
+        Ingen registrering.
+      </div>
+    </nav>
+
+    <main class="main" id="main"></main>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ========== CONSTANTS ========== */
+const BANKS = [
+  { id: 'nordea', nm: 'Nordea Business', ab: 'ND', cur: 'SEK' },
+  { id: 'seb', nm: 'SEB', ab: 'SE', cur: 'SEK' },
+  { id: 'revolut', nm: 'Revolut', ab: 'RV', cur: 'EUR' }
+];
+
+const MERCHANTS = [
+  { nm: 'ICA Maxi Lindhagen', ab: 'IC', cat: 'Provisions', vat: 0.12, sign: -1, lo: 240, hi: 1850, recvProb: 0.45, account: '4010' },
+  { nm: 'Amazon Web Services', ab: 'AW', cat: 'Cloud infra', vat: 0.25, sign: -1, lo: 4200, hi: 21000, recvProb: 0.7, account: '6212' },
+  { nm: 'Google Workspace', ab: 'GW', cat: 'Software', vat: 0.25, sign: -1, lo: 540, hi: 2800, recvProb: 0.85, account: '6212' },
+  { nm: 'SJ AB', ab: 'SJ', cat: 'Resor', vat: 0.06, sign: -1, lo: 380, hi: 2400, recvProb: 0.4, account: '5810' },
+  { nm: 'Telia Sverige AB', ab: 'TE', cat: 'Telekom', vat: 0.25, sign: -1, lo: 790, hi: 3100, recvProb: 0.55, account: '6211' },
+  { nm: 'Spotify Technology', ab: 'SP', cat: 'Software', vat: 0.25, sign: -1, lo: 120, hi: 340, recvProb: 0.3, account: '6212' },
+  { nm: 'Clas Ohlson', ab: 'CO', cat: 'Kontorsmaterial', vat: 0.25, sign: -1, lo: 90, hi: 1600, recvProb: 0.5, account: '6110' },
+  { nm: 'Scaleway SAS', ab: 'SC', cat: 'Cloud · EU', vat: 0.00, sign: -1, lo: 1900, hi: 8800, recvProb: 0.6, account: '6212', euB2b: true },
+  { nm: 'Stripe Payments', ab: 'ST', cat: 'Intäkt', vat: 0.00, sign: 1, lo: 8000, hi: 96000, recvProb: 0.95, account: '3001' },
+  { nm: 'Klarna Bank AB', ab: 'KL', cat: 'Intäkt', vat: 0.00, sign: 1, lo: 12000, hi: 140000, recvProb: 0.92, account: '3001' },
+  { nm: 'Notion Labs', ab: 'NO', cat: 'Software', vat: 0.25, sign: -1, lo: 140, hi: 520, recvProb: 0.4, account: '6212' },
+  { nm: 'WeWork Sthlm', ab: 'WE', cat: 'Lokal', vat: 0.25, sign: -1, lo: 14000, hi: 14000, recvProb: 0.7, account: '5010' },
+  { nm: 'Anthropic Ireland', ab: 'AN', cat: 'AI · EU', vat: 0.00, sign: -1, lo: 1200, hi: 5400, recvProb: 0.8, account: '6212', euB2b: true },
+  { nm: 'Lön — personal', ab: 'LÖ', cat: 'Lön', vat: 0.00, sign: -1, lo: 48000, hi: 52000, recvProb: 1, account: '7010' }
+];
+
+const ICA_ALIASES = ['ICA MAXI', 'ICA Sverige AB', 'ICA Göteborg', 'ICA#4412', 'ICA Kvantum'];
+const AMZN_ALIASES = ['AMZN MKTP', 'AMZN*AWS', 'Amazon EU SARL'];
+
+const AGENTS = [
+  { id: 'recon', nm: 'Reconciliation Agent', ico: '⇄', desc: 'Matchar transaktioner mot ledger, bedömer confidence, flaggar avvikelser.' },
+  { id: 'receipt', nm: 'Receipt Recovery Agent', ico: '❏', desc: 'Återskapar saknade kvitton — söker Kivra, mail, ERP; kontaktar leverantör autonomt.' },
+  { id: 'vat', nm: 'VAT Agent', ico: '%', desc: 'Beräknar moms per jurisdiktion. Detekterar EU-reverse-charge och fel momssatser.' },
+  { id: 'ap', nm: 'AP Automation Agent', ico: '📬', desc: 'Tar emot fakturor via Kivra/Peppol, klassificerar och bokför i Fortnox autonomt.' },
+  { id: 'audit', nm: 'Audit Agent', ico: '◰', desc: 'Bygger revisionsunderlag, verifierar lineage, upptäcker duplikat och oegentligheter.' },
+  { id: 'comm', nm: 'Communication Agent', ico: '✉', desc: 'Mailar leverantörer för saknade underlag, följer upp och eskalerar vid behov.' }
+];
+
+const SOLUTION_TEMPLATES = [
+  {
+    type: 'Receipt Recovery', ico: '❏', agent: 'Receipt Recovery Agent',
+    problem: (tx) => `Saknat kvitto för ${tx.merchant.nm}`,
+    solution: (tx) => `Agent sökte Kivra Business → hittade digital faktura → bifogade automatiskt till verifikat`,
+    auto: true, timeRange: [1800, 3400]
+  },
+  {
+    type: 'Entity Resolution', ico: '🔗', agent: 'Reconciliation Agent',
+    problem: (tx) => `Okänd betalningsreferens "${tx.display}"`,
+    solution: (tx) => `Vector similarity match (${(0.91 + Math.random() * 0.08).toFixed(2)}) → kanonisk entitet <b>${tx.merchant.nm}</b>`,
+    auto: true, timeRange: [80, 220]
+  },
+  {
+    type: 'Duplicate Detected', ico: '⫶', agent: 'Audit Agent',
+    problem: (tx) => `Dubbelbokföring detekterad · samma belopp + datum + leverantör`,
+    solution: (tx) => `Duplikat blockerat, original bevarat, CFO notifierad via mail`,
+    auto: true, timeRange: [400, 900]
+  },
+  {
+    type: 'VAT Correction', ico: '%', agent: 'VAT Agent',
+    problem: (tx) => `25% VAT applicerat på EU-tjänst (${tx.merchant.nm}) — ska vara 0% + reverse charge`,
+    solution: (tx) => `Korrekt skattebehandling applicerad: konto 2614 / 2645 enligt MOMSL kap 5`,
+    auto: true, timeRange: [200, 500]
+  },
+  {
+    type: 'Invoice Match', ico: '⊕', agent: 'Communication Agent',
+    problem: (tx) => `Banktransaktion saknade matchande faktura i Fortnox`,
+    solution: (tx) => `Agent sökte Peppol-arkiv → hittade e-faktura <span class="mono">INV-2026-${ri(1000, 9999)}</span> → matchad`,
+    auto: true, timeRange: [1200, 2400]
+  },
+  {
+    type: 'Account Classification', ico: '⊞', agent: 'Reconciliation Agent',
+    problem: (tx) => `Saknad kontoplan-klassificering`,
+    solution: (tx) => `Klassificerad till konto <b>${tx.merchant.account}</b> · ${tx.merchant.cat} (BAS-kontoplan)`,
+    auto: true, timeRange: [100, 300]
+  },
+  {
+    type: 'Currency Conversion', ico: '€', agent: 'Reconciliation Agent',
+    problem: (tx) => `Transaktion i EUR — saknar SEK-konvertering`,
+    solution: (tx) => `Riksbankens dagskurs hämtad (11.47 SEK/EUR) → konverterad och dokumenterad`,
+    auto: true, timeRange: [150, 400]
+  },
+  {
+    type: 'OCR Re-extraction', ico: '⌖', agent: 'Receipt Recovery Agent',
+    problem: (tx) => `Otydlig PDF — OCR-confidence 0.62`,
+    solution: (tx) => `Andra OCR-modell körd (layout + vision) → extraherade belopp och moms · confidence 0.97`,
+    auto: true, timeRange: [600, 1100]
+  }
+];
+
+const ESCALATIONS = [
+  {
+    type: 'Pending Review', ico: '!', agent: 'Reconciliation Agent',
+    problem: () => `Stor transaktion utan underlag · belopp ${money(ri(40000, 80000))}`,
+    solution: () => `Eskalerad till CFO · väntar godkännande · 3 påminnelser schemalagda`,
+    escalated: true
+  },
+  {
+    type: 'Vendor Followup', ico: '⏱', agent: 'Communication Agent',
+    problem: () => `Leverantör har inte svarat på kvittoförfrågan på 5 dagar`,
+    solution: () => `Andra påminnelse skickad · eskalering till mänsklig hantering schemalagd om 48h`,
+    escalated: true
+  }
+];
+
+const AP_FLOW = [
+  { lbl: 'Inkommen', sub: 'Kivra · Peppol', icn: '📬' },
+  { lbl: 'OCR & Layout', sub: 'AI-extraktion', icn: '⌖' },
+  { lbl: 'Leverantör', sub: 'Verifierad', icn: '✓' },
+  { lbl: 'Kontoplan', sub: 'BAS-matching', icn: '⊞' },
+  { lbl: 'Moms', sub: 'Klassificerad', icn: '%' },
+  { lbl: 'Fortnox', sub: 'Bokförd', icn: '✓' }
+];
+
+/* ========== STATE ========== */
+const S = {
+  view: 'cockpit',
+  tick: 0,
+  txns: [],
+  events: [],
+  solutions: [],
+  approvals: [],
+  metrics: {
+    totalTx: 847,
+    autoHandled: 0,
+    totalHandled: 0,
+    timeSavedMin: 0,
+    cashPosition: 1842560
+  },
+  agents: Object.fromEntries(AGENTS.map(a => [a.id, { ...a, done: 0, busy: false, last: 'Aktiv · väntar inflöde' }])),
+  apActive: -1,
+  apBookedToday: [
+    { name: 'Google Workspace Ireland', amount: 1247, ts: '14:21:08', acc: '6212' },
+    { name: 'Anthropic Ireland Ltd', amount: 3420, ts: '14:18:32', acc: '6212' },
+    { name: 'SJ AB', amount: 890, ts: '14:14:11', acc: '5810' },
+    { name: 'Telia Sverige AB', amount: 2340, ts: '14:09:44', acc: '6211' },
+    { name: 'AWS EU SARL', amount: 8920, ts: '14:02:18', acc: '6212' }
+  ],
+  solFilter: 'all',
+  dirty: true
+};
+
+let evtSeq = 0;
+let solSeq = 0;
+let txCounter = 1000;
+const startTime = Date.now();
+
+/* ========== HELPERS ========== */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const ri = (a, b) => Math.floor(rnd(a, b + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const money = n => Math.round(n).toLocaleString('sv-SE').replace(/,/g, ' ') + ' kr';
+const pct = n => Math.round(n * 100) + '%';
+const clockNow = () => {
+  const d = new Date();
+  return [d.getHours(), d.getMinutes(), d.getSeconds()]
+    .map(n => String(n).padStart(2, '0')).join(':');
+};
+const simClock = () => {
+  const sec = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(sec / 60) % 60;
+  const s = sec % 60;
+  return `${String(14).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+
+/* ========== ONBOARDING ========== */
+function runOnboard() {
+  const items = $$('.ob-item');
+  let i = 0;
+  const startTxCount = 100;
+  let txCount = startTxCount;
+  const $txMeta = $('#ob-tx');
+
+  function nextStep() {
+    if (i > 0) items[i - 1].classList.remove('active') || items[i - 1].classList.add('done');
+    if (i >= items.length) {
+      $('#obStart').classList.add('show');
+      return;
+    }
+    items[i].classList.add('active');
+    if (i === 2) {
+      // count up tx
+      const iv = setInterval(() => {
+        txCount += ri(20, 60);
+        $txMeta.textContent = `${txCount} st`;
+        if (txCount >= 847) {
+          $txMeta.textContent = '847 st';
+          clearInterval(iv);
+          i++;
+          setTimeout(nextStep, 350);
+        }
+      }, 90);
+    } else {
+      setTimeout(() => {
+        i++;
+        nextStep();
+      }, 700 + Math.random() * 400);
+    }
+  }
+  nextStep();
+
+  $('#obStart').addEventListener('click', () => {
+    $('#onboard').classList.add('hide');
+    $('#app').style.visibility = 'visible';
+    setTimeout(() => $('#onboard').remove(), 600);
+    startSim();
+  });
+}
+
+/* ========== SIMULATION ========== */
+function emit(type, msg, kind = 'evt') {
+  evtSeq++;
+  S.events.unshift({ seq: evtSeq, type, msg, kind, t: simClock() });
+  if (S.events.length > 200) S.events.length = 200;
+  S.dirty = true;
+}
+
+function makeTxn() {
+  const bank = pick(BANKS);
+  const m = pick(MERCHANTS);
+  const amount = Math.round(rnd(m.lo, m.hi));
+  let display = m.nm;
+  if (m.ab === 'IC' && Math.random() < 0.6) display = pick(ICA_ALIASES);
+  if (m.ab === 'AW' && Math.random() < 0.5) display = pick(AMZN_ALIASES);
+
+  const id = 'TX-' + (++txCounter);
+  const hasReceipt = Math.random() < m.recvProb;
+  const confidence = hasReceipt
+    ? 0.9 + Math.random() * 0.09
+    : 0.55 + Math.random() * 0.3;
+  const willFix = hasReceipt || Math.random() < 0.85;
+
+  const tx = {
+    id, bank: bank.nm, bankId: bank.id,
+    merchant: m, display, amount,
+    sign: m.sign, gross: amount,
+    vatRate: m.vat,
+    vat: m.sign < 0 && m.vat > 0 ? Math.round(amount - amount / (1 + m.vat)) : 0,
+    status: 'detected',
+    confidence,
+    hasReceipt,
+    willFix
+  };
+
+  S.txns.unshift(tx);
+  if (S.txns.length > 100) S.txns.length = 100;
+  return tx;
+}
+
+function addSolution(tx, template) {
+  solSeq++;
+  const time = ri(template.timeRange[0], template.timeRange[1]);
+  const sol = {
+    seq: solSeq,
+    type: template.type,
+    ico: template.ico,
+    agent: template.agent,
+    problem: typeof template.problem === 'function' ? template.problem(tx) : template.problem,
+    solution: typeof template.solution === 'function' ? template.solution(tx) : template.solution,
+    auto: template.auto !== false,
+    escalated: template.escalated || false,
+    tx,
+    timeMs: time,
+    ts: simClock()
+  };
+  S.solutions.unshift(sol);
+  if (S.solutions.length > 60) S.solutions.length = 60;
+  S.metrics.timeSavedMin += Math.round(rnd(15, 42));
+  S.dirty = true;
+}
+
+function pickAgent(name) {
+  const map = {
+    'Receipt Recovery Agent': 'receipt',
+    'Reconciliation Agent': 'recon',
+    'Audit Agent': 'audit',
+    'VAT Agent': 'vat',
+    'Communication Agent': 'comm',
+    'AP Automation Agent': 'ap'
+  };
+  return S.agents[map[name]];
+}
+
+function processTxn(tx) {
+  tx.status = 'processing';
+  const a = S.agents.recon;
+  a.busy = true;
+  a.last = `Matchar ${tx.merchant.nm} · ${money(tx.gross)}`;
+  S.dirty = true;
+
+  emit('TransactionDetected', `${tx.bank}: ${tx.sign < 0 ? 'utbetalning' : 'inbetalning'} <b>${money(tx.amount)}</b> · ${tx.display}`, 'evt');
+
+  setTimeout(() => {
+    // Entity resolution
+    if (tx.display !== tx.merchant.nm) {
+      addSolution(tx, SOLUTION_TEMPLATES[1]); // Entity Resolution
+      const ag = pickAgent('Reconciliation Agent');
+      ag.last = `Entity resolved · ${tx.merchant.nm}`;
+      ag.done++;
+      emit('EntityResolved', `"${tx.display}" → <b>${tx.merchant.nm}</b>`, 'ai');
+    }
+
+    // Account classification
+    if (Math.random() < 0.35) {
+      setTimeout(() => addSolution(tx, SOLUTION_TEMPLATES[5]), 200);
+    }
+
+    // VAT correction for EU B2B
+    if (tx.merchant.euB2b && Math.random() < 0.7) {
+      setTimeout(() => {
+        addSolution(tx, SOLUTION_TEMPLATES[3]);
+        const ag = pickAgent('VAT Agent');
+        ag.last = `Reverse charge applicerad · ${tx.merchant.nm}`;
+        ag.done++;
+      }, 400);
+    }
+
+    // Currency conversion for EUR
+    if (tx.bankId === 'revolut' && Math.random() < 0.6) {
+      setTimeout(() => addSolution(tx, SOLUTION_TEMPLATES[6]), 300);
+    }
+
+    // Duplicate detection (rare)
+    if (Math.random() < 0.06) {
+      setTimeout(() => {
+        addSolution(tx, SOLUTION_TEMPLATES[2]);
+        const ag = pickAgent('Audit Agent');
+        ag.last = `Duplikat blockerat · ${tx.merchant.nm}`;
+        ag.done++;
+        emit('DuplicateBlocked', `<b>Duplikat upptäckt</b> · ${tx.merchant.nm} ${money(tx.gross)}`, 'warn');
+      }, 500);
+    }
+
+    // Receipt recovery if missing
+    if (!tx.hasReceipt && tx.willFix) {
+      tx.status = 'recovering';
+      const ra = S.agents.receipt;
+      ra.busy = true;
+      ra.last = `Återskapar kvitto · ${tx.merchant.nm}`;
+      emit('ReceiptRecoveryStarted', `Receipt Recovery Agent startad · ${tx.merchant.nm}`, 'ai');
+      S.dirty = true;
+
+      const steps = [
+        ['Sökte Kivra digital brevlåda · ingen träff', 'evt'],
+        ['Sökte ERP-arkiv · ingen träff', 'evt'],
+        ['Skickade autonom förfrågan till leverantör', 'ai'],
+        ['Svar mottaget · PDF inkommen', 'ok'],
+        ['OCR + layout analysis klar', 'ai']
+      ];
+      let si = 0;
+      const runRecover = () => {
+        if (si >= steps.length) {
+          tx.hasReceipt = true;
+          tx.confidence = 0.95 + Math.random() * 0.04;
+          tx.status = 'fixed';
+          ra.busy = false;
+          ra.last = `Kvitto återskapat · ${tx.merchant.nm}`;
+          ra.done++;
+          addSolution(tx, SOLUTION_TEMPLATES[0]); // Receipt Recovery
+          emit('ReceiptRecovered', `Kvitto <b>återskapat autonomt</b> · ${tx.merchant.nm}`, 'ok');
+          finalizeBooking(tx);
+          return;
+        }
+        const [m, k] = steps[si++];
+        emit('ReceiptRecoveryStep', m, k);
+        setTimeout(runRecover, ri(450, 900));
+      };
+      setTimeout(runRecover, 400);
+    } else if (!tx.willFix) {
+      // Escalation
+      tx.status = 'review';
+      S.approvals.push(tx.id);
+      const tmpl = pick(ESCALATIONS);
+      addSolution(tx, tmpl);
+      emit('EscalatedToHuman', `Confidence under tröskel (${pct(tx.confidence)}) · <b>eskalerad</b>`, 'warn');
+      a.busy = false;
+      a.last = `Eskalerad · ${tx.merchant.nm}`;
+    } else {
+      finalizeBooking(tx);
+      a.busy = false;
+      a.last = `Bokförd · ${tx.merchant.nm}`;
+      a.done++;
+    }
+
+    S.dirty = true;
+  }, ri(600, 1200));
+}
+
+function finalizeBooking(tx) {
+  tx.status = 'booked';
+  S.metrics.totalHandled++;
+  S.metrics.autoHandled++;
+  if (tx.sign > 0) S.metrics.cashPosition += tx.gross;
+  else S.metrics.cashPosition -= tx.gross;
+
+  S.agents.vat.done++;
+  S.agents.audit.done++;
+  S.agents.vat.last = `Moms verifierad · ${tx.merchant.nm}`;
+  S.agents.audit.last = `Lineage förseglad · ${tx.id}`;
+
+  emit('AutoBooked', `<b>Auto-bokförd</b> · ${tx.merchant.nm} · ${money(tx.gross)} · konto ${tx.merchant.account}`, 'ok');
+  S.dirty = true;
+}
+
+function runAPFlow() {
+  // Cycle through pipeline steps
+  S.apActive = 0;
+  S.dirty = true;
+  const tick = () => {
+    S.apActive++;
+    if (S.apActive >= AP_FLOW.length) {
+      // Add new booked invoice
+      const m = pick(MERCHANTS.filter(x => x.sign < 0));
+      const amt = Math.round(rnd(m.lo, m.hi));
+      S.apBookedToday.unshift({
+        name: m.nm, amount: amt, ts: simClock(), acc: m.account
+      });
+      if (S.apBookedToday.length > 12) S.apBookedToday.length = 12;
+      emit('APBooked', `<b>AP-faktura auto-bokad</b> · ${m.nm} · ${money(amt)} · konto ${m.account}`, 'ok');
+      S.agents.ap.done++;
+      S.agents.ap.last = `Bokad: ${m.nm}`;
+      S.apActive = -1;
+      S.dirty = true;
+      setTimeout(() => { S.apActive = 0; tick(); }, ri(4000, 8000));
+      return;
+    }
+    S.dirty = true;
+    setTimeout(tick, ri(500, 1200));
+  };
+  setTimeout(tick, ri(800, 1500));
+}
+
+function tick() {
+  S.tick++;
+
+  // Spawn new txn
+  if (Math.random() < 0.65) {
+    const tx = makeTxn();
+    setTimeout(() => processTxn(tx), ri(200, 600));
+  }
+
+  // Update treasury narrative
+  if (S.tick % 10 === 0) {
+    const days = Math.max(1, Math.round(S.metrics.cashPosition / 35000));
+    S.agents.treas && (S.agents.treas.last = `Runway ${days} dagar`);
+  }
+
+  // Update clock
+  S.dirty = true;
+}
+
+function startSim() {
+  render();
+  setInterval(tick, 2200);
+  setInterval(() => { if (S.dirty) { render(); S.dirty = false; } }, 300);
+  setInterval(() => $('#t-clock') && ($('#t-clock').textContent = clockNow()), 1000);
+  runAPFlow();
+
+  // Pre-seed some solutions for instant visual content
+  setTimeout(() => {
+    const tx1 = makeTxn();
+    tx1.display = 'AMZN MKTP'; tx1.merchant = MERCHANTS[1]; tx1.amount = 8420; tx1.gross = 8420;
+    addSolution(tx1, SOLUTION_TEMPLATES[1]);
+    const tx2 = makeTxn();
+    tx2.merchant = MERCHANTS[7]; tx2.amount = 5400; tx2.gross = 5400;
+    addSolution(tx2, SOLUTION_TEMPLATES[3]);
+    const tx3 = makeTxn();
+    tx3.merchant = MERCHANTS[0]; tx3.amount = 1247; tx3.gross = 1247;
+    addSolution(tx3, SOLUTION_TEMPLATES[0]);
+  }, 200);
+}
+
+/* ========== RENDER ========== */
+function render() {
+  // topbar
+  $('#t-tx').textContent = (S.metrics.totalTx + S.metrics.totalHandled).toLocaleString('sv-SE') + ' tx';
+  const total = Math.max(1, S.metrics.totalHandled + S.approvals.length);
+  const autoPct = Math.round((S.metrics.autoHandled / total) * 100);
+  $('#t-auto').textContent = (94 + Math.round((autoPct - 94) * 0.4)) + '%';
+  $('#t-sol').textContent = S.solutions.length;
+  $('#n-sol').textContent = S.solutions.length;
+  $('#n-tx').textContent = S.txns.length;
+
+  // nav active
+  $$('.navitem').forEach(n => n.classList.toggle('active', n.dataset.view === S.view));
+
+  // main content
+  const m = $('#main');
+  const views = {
+    cockpit: renderCockpit,
+    solutions: renderSolutions,
+    ledger: renderLedger,
+    ap: renderAP,
+    agents: renderAgents,
+    events: renderEvents
+  };
+  m.innerHTML = views[S.view]();
+}
+
+function pageHead(title, sub, num) {
+  return `<div class="page-h"><h1>${title}</h1><div class="sub">${sub}</div>${num ? `<div class="num">${num}</div>` : ''}</div>`;
+}
+
+function renderCockpit() {
+  const autoCount = S.solutions.filter(s => s.auto).length;
+  const escCount = S.solutions.filter(s => s.escalated).length;
+  const autoPct = S.solutions.length ? Math.round((autoCount / S.solutions.length) * 100) : 94;
+
+  // KPIs
+  const kpi = `
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="lab">Auto-lösta idag</div>
+        <div class="val green">${autoPct}<small>%</small></div>
+        <div class="meta"><span class="up">↑ 3.2%</span> vs. förra veckan</div>
+      </div>
+      <div class="kpi">
+        <div class="lab">Tid sparat</div>
+        <div class="val">${(S.metrics.timeSavedMin / 60).toFixed(1)}<small>h</small></div>
+        <div class="meta">Motsvarar ${money(S.metrics.timeSavedMin * 7.5)} arbetstid</div>
+      </div>
+      <div class="kpi">
+        <div class="lab">Lösningar hittade</div>
+        <div class="val">${S.solutions.length}</div>
+        <div class="meta">${autoCount} auto · ${escCount} eskalerade</div>
+      </div>
+      <div class="kpi dark">
+        <div class="lab">Kassaposition</div>
+        <div class="val">${money(S.metrics.cashPosition).replace(' kr', '')}<small>kr</small></div>
+        <div class="meta">Runway · ~52 dagar</div>
+      </div>
+    </div>
+  `;
+
+  // Gauge
+  const circ = 2 * Math.PI * 54;
+  const dash = (autoPct / 100) * circ;
+  const gauge = `
+    <div class="card">
+      <div class="hd"><h3>Autonomy</h3><div class="right">Senaste timmen</div></div>
+      <div class="bd">
+        <div class="gauge-wrap">
+          <div class="gauge">
+            <svg width="130" height="130">
+              <circle cx="65" cy="65" r="54" fill="none" stroke="#ECEAE5" stroke-width="14"/>
+              <circle cx="65" cy="65" r="54" fill="none" stroke="#1A6B3A" stroke-width="14"
+                stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
+            </svg>
+            <div class="ctr"><div class="big">${autoPct}%</div><div class="lil">Autonom</div></div>
+          </div>
+          <div class="gauge-legend">
+            <div><div class="sw" style="background:#1A6B3A"></div>Auto-löst<span class="n">${autoCount}</span></div>
+            <div><div class="sw" style="background:#8A6400"></div>Pågående<span class="n">${S.txns.filter(t => t.status === 'recovering' || t.status === 'processing').length}</span></div>
+            <div><div class="sw" style="background:#9A2C2C"></div>Eskalerat<span class="n">${escCount}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Recent solutions (top 5)
+  const recentSol = S.solutions.slice(0, 5).map(s => `
+    <div class="feed-item">
+      <span class="tag ${s.escalated ? 'warn' : 'ok'}">${s.type}</span>
+      <div class="msg"><b>${s.tx.merchant.nm}</b> · ${money(s.tx.amount)} — ${s.solution}</div>
+    </div>
+  `).join('') || `<div class="empty"><div class="big">Väntar på inflöde...</div></div>`;
+
+  const solCard = `
+    <div class="card">
+      <div class="hd"><h3>Senaste lösningar</h3><div class="right"><a href="#" onclick="setView('solutions');return false" style="color:var(--accent);font-weight:600">Visa alla →</a></div></div>
+      <div class="feed">${recentSol}</div>
+    </div>
+  `;
+
+  // Event feed
+  const events = S.events.slice(0, 8).map(e => `
+    <div class="feed-item">
+      <span class="t">${e.t}</span>
+      <span class="tag ${e.kind}">${e.type}</span>
+      <div class="msg">${e.msg}</div>
+    </div>
+  `).join('') || `<div class="empty"><div class="big">Inga events ännu</div></div>`;
+
+  const eventCard = `
+    <div class="card">
+      <div class="hd"><h3>Live händelseström</h3><div class="right"><div class="live-dot" style="display:inline-block;vertical-align:middle"></div> Live</div></div>
+      <div class="feed">${events}</div>
+    </div>
+  `;
+
+  return pageHead('Cockpit', 'Översikt · live operations · ' + new Date().toLocaleDateString('sv-SE'), 'DEMO MODE')
+    + kpi
+    + `<div class="grid-2">${gauge}${solCard}</div>`
+    + `<div style="margin-top:16px">${eventCard}</div>`;
+}
+
+function renderSolutions() {
+  const filtered = S.solutions.filter(s => {
+    if (S.solFilter === 'all') return true;
+    if (S.solFilter === 'auto') return s.auto && !s.escalated;
+    if (S.solFilter === 'escalated') return s.escalated;
+    return true;
+  });
+
+  const autoCount = S.solutions.filter(s => s.auto && !s.escalated).length;
+  const escCount = S.solutions.filter(s => s.escalated).length;
+
+  const header = `
+    <div class="sol-header">
+      <div class="sol-counter">
+        <span class="big">${S.solutions.length}</span> <span>lösningar hittade idag</span>
+      </div>
+      <div style="font-size:13px;color:var(--gray);display:flex;gap:18px">
+        <div><b style="color:var(--accent)">${autoCount}</b> auto-lösta</div>
+        <div><b style="color:var(--warn)">${escCount}</b> eskalerade</div>
+        <div><b style="color:var(--gray)">${S.solutions.length - autoCount - escCount}</b> pågående</div>
+      </div>
+      <div class="sol-filters">
+        <button class="sol-filter ${S.solFilter === 'all' ? 'active' : ''}" onclick="setSolFilter('all')">Alla</button>
+        <button class="sol-filter ${S.solFilter === 'auto' ? 'active' : ''}" onclick="setSolFilter('auto')">Auto-löst</button>
+        <button class="sol-filter ${S.solFilter === 'escalated' ? 'active' : ''}" onclick="setSolFilter('escalated')">Eskalerat</button>
+      </div>
+    </div>
+  `;
+
+  const note = `
+    <div style="background:var(--accent-soft);border:1px solid var(--accent-border);border-left:4px solid var(--accent);padding:14px 18px;border-radius:8px;margin-bottom:20px;font-size:13px;color:var(--black);line-height:1.55">
+      <strong>Det här är Reconcilers kärna:</strong> systemet identifierar inte bara problem — det löser dem autonomt. Varje rad nedan visar ett verkligt avvikelsescenario som AI-agenterna upptäckte och åtgärdade utan mänsklig inblandning.
+    </div>
+  `;
+
+  const items = filtered.length ? filtered.map(s => `
+    <div class="sol-item ${s.escalated ? 'escalated' : 'auto'}">
+      <div class="sol-ico">${s.ico}</div>
+      <div class="sol-body">
+        <div class="sol-head">
+          <span class="sol-type">${s.type}</span>
+          <span class="sol-title">${s.tx.merchant.nm}</span>
+          <span class="sol-amount">· ${money(s.tx.amount)}</span>
+        </div>
+        <div class="sol-problem"><b>Problem:</b> ${s.problem}</div>
+        <div class="sol-solution">${s.solution}</div>
+      </div>
+      <div class="sol-meta">
+        <div class="time">${s.timeMs ? (s.timeMs / 1000).toFixed(1) + 's' : '—'}</div>
+        <div class="agent">${s.agent}</div>
+        <div>${s.ts}</div>
+      </div>
+    </div>
+  `).join('') : `<div class="empty"><div class="big">Inga lösningar i denna kategori ännu</div>Vänta några sekunder...</div>`;
+
+  return pageHead('Lösningar', 'Autonoma problemlösningar · senaste 24h', S.solutions.length + ' totalt')
+    + note + header + `<div class="sol-list">${items}</div>`;
+}
+
+function renderLedger() {
+  if (!S.txns.length) {
+    return pageHead('Transaktioner', 'Canonical ledger · event-sourced', '0 POSTER')
+      + `<div class="empty"><div class="big">Inga transaktioner ännu</div>Vänta några sekunder...</div>`;
+  }
+  const rows = S.txns.slice(0, 30).map(tx => `
+    <tr>
+      <td class="mono" style="color:var(--gray-light);font-size:11px">${tx.id}</td>
+      <td>
+        <div class="merch-cell">
+          <div class="logo">${tx.merchant.ab}</div>
+          <div>
+            <div class="merch-name">${tx.merchant.nm}</div>
+            <div class="merch-sub">${tx.display !== tx.merchant.nm ? '⤷ ' + tx.display + ' · ' : ''}${tx.merchant.cat}</div>
+          </div>
+        </div>
+      </td>
+      <td>${tx.bank}</td>
+      <td class="r" style="color:${tx.sign > 0 ? 'var(--accent)' : 'var(--black)'};font-weight:600">${tx.sign > 0 ? '+' : '−'}${money(tx.gross)}</td>
+      <td class="r">${tx.vat ? money(tx.vat) : '—'}</td>
+      <td>${statusPill(tx)}</td>
+      <td class="r">${confBar(tx)}</td>
+    </tr>
+  `).join('');
+
+  return pageHead('Transaktioner', 'Live ledger · entity-resolved · auto-bokförd', S.txns.length + ' POSTER')
+    + `<div class="card" style="overflow:hidden"><table><thead><tr><th>ID</th><th>Leverantör</th><th>Källa</th><th class="r">Belopp</th><th class="r">Moms</th><th>Status</th><th class="r">Confidence</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function statusPill(tx) {
+  const map = {
+    booked: ['booked', '✓ Bokförd'],
+    review: ['review', '⚠ Granskning'],
+    processing: ['processing', '⟳ Processar'],
+    recovering: ['recovering', '⟳ Återskapar kvitto'],
+    fixed: ['fixed', '✓ Auto-fixad'],
+    detected: ['processing', '⟳ Upptäckt']
+  };
+  const [cls, lbl] = map[tx.status] || ['processing', tx.status];
+  return `<span class="pill ${cls}"><span class="pd"></span>${lbl}</span>`;
+}
+
+function confBar(tx) {
+  const c = tx.confidence || 0;
+  const cls = c >= 0.85 ? '' : c >= 0.6 ? 'low' : 'bad';
+  return `<div class="conf-bar ${cls}"><div class="bar"><i style="width:${(c * 100).toFixed(0)}%"></i></div><span class="pct">${(c * 100).toFixed(0)}%</span></div>`;
+}
+
+function renderAP() {
+  const steps = AP_FLOW.map((s, i) => {
+    const cls = i < S.apActive ? 'done' : i === S.apActive ? 'active' : '';
+    return `<div class="pipe-step ${cls}"><div class="icn">${s.icn}</div><div class="lbl">${s.lbl}</div><div class="sub">${s.sub}</div></div>`;
+  }).join('<div class="pipe-arrow">→</div>');
+
+  const stats = `
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi"><div class="lab">Fakturor idag</div><div class="val">${S.apBookedToday.length + 12}</div><div class="meta">via Kivra + Peppol</div></div>
+      <div class="kpi"><div class="lab">Auto-bokade</div><div class="val green">94<small>%</small></div><div class="meta">utan mänsklig hantering</div></div>
+      <div class="kpi"><div class="lab">Tid per faktura</div><div class="val">0,3<small>s</small></div><div class="meta">vs. manuellt 4-7 min</div></div>
+      <div class="kpi"><div class="lab">Besparing/månad</div><div class="val green">${money(28400).replace(' kr', '')}<small>kr</small></div><div class="meta">42 timmar arbete</div></div>
+    </div>
+  `;
+
+  const currentLabel = S.apActive >= 0 && S.apActive < AP_FLOW.length
+    ? `<div class="ap-current"><div class="live-dot"></div>Bearbetar nu: <b>${AP_FLOW[S.apActive].lbl}</b> · ${AP_FLOW[S.apActive].sub}</div>`
+    : `<div class="ap-current"><div class="live-dot"></div>Pipeline aktiv · väntar nästa faktura</div>`;
+
+  const recent = S.apBookedToday.map(b => `
+    <div class="feed-item">
+      <span class="t">${b.ts}</span>
+      <span class="tag ok">✓ Bokförd</span>
+      <div class="msg"><b>${b.name}</b> · ${money(b.amount)} · konto ${b.acc}</div>
+    </div>
+  `).join('');
+
+  return pageHead('AP Automation', 'Kivra Business → Peppol → Reconciler → Fortnox · autonomt', 'V2 · NYHET')
+    + stats
+    + `<div class="pipeline">${steps}</div>${currentLabel}`
+    + `<div style="margin-top:20px"><div class="card"><div class="hd"><h3>Senast auto-bokade fakturor</h3><div class="right">Idag</div></div><div class="feed">${recent}</div></div></div>`;
+}
+
+function renderAgents() {
+  const grid = AGENTS.map(a => {
+    const ag = S.agents[a.id];
+    return `
+      <div class="agent ${ag.busy ? 'busy' : ''}">
+        <div class="av">${a.ico}</div>
+        <div class="info">
+          <div class="nm">${a.nm}<span class="led">${ag.busy ? '● ARBETAR' : '● AKTIV'}</span></div>
+          <div class="ds">${a.desc}</div>
+          <div class="st">${ag.busy ? '<b>' + ag.last + '</b>' : 'Senast: <b>' + ag.last + '</b>'}</div>
+          <div class="stats">
+            <div><div class="n">${ag.done}</div><div class="l">Uppgifter idag</div></div>
+            <div><div class="n">${ag.busy ? '1' : '0'}</div><div class="l">Pågående</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return pageHead('AI Agenter', '6 specialiserade agenter · LLM + tool-use · running 24/7', '6 AGENTER')
+    + `<div class="agent-grid">${grid}</div>`;
+}
+
+function renderEvents() {
+  const ev = S.events.map(e => `
+    <div class="feed-item">
+      <span class="t">${e.t}</span>
+      <span class="tag ${e.kind}">${e.type}</span>
+      <div class="msg">${e.msg}</div>
+    </div>
+  `).join('') || `<div class="empty"><div class="big">Inga events</div></div>`;
+
+  return pageHead('Händelseström', 'Event-sourced · alla operationer loggas', S.events.length + ' EVENTS')
+    + `<div class="card"><div class="feed" style="max-height:none">${ev}</div></div>`;
+}
+
+window.setView = function (v) {
+  S.view = v;
+  render();
+};
+
+window.setSolFilter = function (f) {
+  S.solFilter = f;
+  render();
+};
+
+document.addEventListener('click', e => {
+  const nav = e.target.closest('.navitem');
+  if (nav && nav.dataset.view) setView(nav.dataset.view);
+});
+
+/* ========== BOOT ========== */
+runOnboard();
+
+</script>
+</body>
+</html>

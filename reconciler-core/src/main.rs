@@ -2,6 +2,8 @@ mod models;
 mod inbox;
 mod intelligence;
 mod matching;
+mod workflow;
+mod compliance;
 mod connectors;
 mod ai;
 mod events;

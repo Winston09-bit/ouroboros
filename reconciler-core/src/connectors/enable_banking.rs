@@ -62,9 +62,16 @@ impl EnableBankingConnector {
             .context("Failed to parse RSA PEM key")?;
 
         let now = Utc::now().timestamp();
-        let claims = JwtClaims { iss: self.app_id.clone(), iat: now, exp: now + 3600 };
+        let claims = JwtClaims {
+            iss: self.app_id.clone(),
+            aud: "https://api.enablebanking.com".to_string(),
+            iat: now,
+            exp: now + 3600,
+        };
 
-        encode(&Header::new(Algorithm::RS256), &claims, &key)
+        let mut header = Header::new(Algorithm::RS256);
+        header.kid = Some(self.app_id.clone()); // Enable Banking requires kid = app_id
+        encode(&header, &claims, &key)
             .context("JWT signing failed")
     }
 
@@ -102,6 +109,7 @@ impl EnableBankingConnector {
 #[derive(Debug, Serialize, Deserialize)]
 struct JwtClaims {
     iss: String,
+    aud: String,
     iat: i64,
     exp: i64,
 }

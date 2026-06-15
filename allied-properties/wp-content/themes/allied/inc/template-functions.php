@@ -73,12 +73,29 @@ function allied_default_menu() {
  * a hard dependency while still giving good defaults.)
  */
 function allied_seo_meta() {
+	// Site-wide fallback so every page always has a meaningful description.
+	$fallback = get_bloginfo( 'description' );
+	if ( ! $fallback ) {
+		$fallback = __( 'Allied Properties acquires, entitles, and develops residential land across Northeastern North Carolina and Hampton Roads, Virginia — delivering finished communities to national and regional homebuilders.', 'allied' );
+	}
+
 	$desc = '';
 	if ( is_singular() ) {
-		$desc = has_excerpt() ? get_the_excerpt() : wp_strip_all_tags( get_bloginfo( 'description' ) );
+		if ( has_excerpt() ) {
+			$desc = get_the_excerpt();
+		} else {
+			$content = wp_strip_all_tags( get_the_content() );
+			$desc    = $content ? $content : $fallback;
+		}
+	} elseif ( is_post_type_archive() || is_category() || is_tax() || is_tag() ) {
+		$desc = wp_strip_all_tags( get_the_archive_description() );
+		if ( ! $desc ) {
+			$desc = $fallback;
+		}
 	} else {
-		$desc = get_bloginfo( 'description' );
+		$desc = $fallback;
 	}
+
 	$desc = wp_trim_words( $desc, 30, '' );
 	if ( $desc ) {
 		printf( '<meta name="description" content="%s" />' . "\n", esc_attr( $desc ) );
@@ -99,3 +116,19 @@ add_action( 'wp_head', 'allied_seo_meta', 5 );
  */
 add_filter( 'excerpt_more', function () { return '…'; } );
 add_filter( 'excerpt_length', function () { return 28; } );
+
+/**
+ * Cleaner archive titles — drop WordPress's "Archives:", "Category:" prefixes.
+ */
+add_filter(
+	'get_the_archive_title',
+	function ( $title ) {
+		if ( is_post_type_archive( 'community' ) ) {
+			return __( 'Communities', 'allied' );
+		}
+		if ( is_tax() || is_category() || is_tag() ) {
+			return single_term_title( '', false );
+		}
+		return $title;
+	}
+);

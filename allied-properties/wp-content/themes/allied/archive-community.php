@@ -22,10 +22,13 @@ get_header();
 		$regions = get_terms( array( 'taxonomy' => 'region', 'hide_empty' => true ) );
 		if ( $regions && ! is_wp_error( $regions ) ) :
 			?>
-			<div class="filter-bar" role="tablist" aria-label="<?php esc_attr_e( 'Filter communities by region', 'allied' ); ?>">
-				<a href="#" data-filter="all" class="is-active"><?php esc_html_e( 'All', 'allied' ); ?></a>
-				<?php foreach ( $regions as $region ) : ?>
-					<a href="#" data-filter="<?php echo esc_attr( $region->slug ); ?>"><?php echo esc_html( $region->name ); ?></a>
+			<div class="filter-bar" role="group" aria-label="<?php esc_attr_e( 'Filter communities by region', 'allied' ); ?>">
+				<a href="<?php echo esc_url( get_post_type_archive_link( 'community' ) ); ?>" data-filter="all" class="is-active"><?php esc_html_e( 'All', 'allied' ); ?></a>
+				<?php
+				foreach ( $regions as $region ) :
+					$term_link = get_term_link( $region );
+					?>
+					<a href="<?php echo esc_url( is_wp_error( $term_link ) ? '#' : $term_link ); ?>" data-filter="<?php echo esc_attr( $region->slug ); ?>"><?php echo esc_html( $region->name ); ?></a>
 				<?php endforeach; ?>
 			</div>
 		<?php endif; ?>

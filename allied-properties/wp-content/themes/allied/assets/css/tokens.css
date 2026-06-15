@@ -31,27 +31,29 @@
      Default pairing: a serif display for headings + a neutral grotesk
      for body. Self-host the final fonts (see HANDOFF.md) to honor the
      "no external dependency" boundary. */
-  --font-display: "Canela", "Tiempos Headline", Georgia, "Times New Roman", serif;
-  --font-body:    "Inter", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-display: "Canela", "Tiempos Headline", "Iowan Old Style", "Palatino Linotype", "Palatino", Georgia, "Times New Roman", serif;
+  --font-body:    "Inter", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-mono:    ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  /* Fluid type scale (clamp: min, preferred, max) */
-  --fs-eyebrow: 0.78rem;
-  --fs-small:   0.875rem;
-  --fs-body:    clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
-  --fs-lead:    clamp(1.15rem, 1.05rem + 0.5vw, 1.375rem);
-  --fs-h4:      clamp(1.15rem, 1.05rem + 0.5vw, 1.4rem);
-  --fs-h3:      clamp(1.4rem, 1.2rem + 1vw, 1.9rem);
-  --fs-h2:      clamp(1.9rem, 1.5rem + 2vw, 2.9rem);
-  --fs-h1:      clamp(2.4rem, 1.8rem + 3.2vw, 4.2rem);
-  --fs-display: clamp(2.8rem, 1.9rem + 4.5vw, 5.5rem);
+  /* Fluid type scale (clamp: min, preferred, max) — tightened for a clearer,
+     more confident editorial hierarchy. */
+  --fs-eyebrow: 0.8rem;
+  --fs-small:   0.8875rem;
+  --fs-body:    clamp(1.0625rem, 1.03rem + 0.18vw, 1.125rem);
+  --fs-lead:    clamp(1.2rem, 1.06rem + 0.7vw, 1.5rem);
+  --fs-h4:      clamp(1.2rem, 1.08rem + 0.6vw, 1.5rem);
+  --fs-h3:      clamp(1.5rem, 1.25rem + 1.15vw, 2.1rem);
+  --fs-h2:      clamp(2rem, 1.55rem + 2.25vw, 3.15rem);
+  --fs-h1:      clamp(2.6rem, 1.85rem + 3.6vw, 4.6rem);
+  --fs-display: clamp(3rem, 1.9rem + 5.2vw, 6rem);
 
-  --lh-tight: 1.08;
-  --lh-snug:  1.25;
-  --lh-base:  1.6;
+  --lh-tight: 1.04;
+  --lh-snug:  1.22;
+  --lh-base:  1.66;
 
-  --tracking-eyebrow: 0.18em;
-  --tracking-tight:  -0.01em;
+  --tracking-eyebrow: 0.2em;
+  --tracking-tight:  -0.015em;
+  --tracking-display: -0.025em;
 
   /* --- Spacing scale --- */
   --space-3xs: 0.25rem;
@@ -72,9 +74,13 @@
   --radius-lg:      4px;
 
   /* --- Effects --- */
-  --shadow-sm: 0 1px 2px rgba(16,23,38,0.06);
-  --shadow-md: 0 12px 30px -12px rgba(16,23,38,0.22);
-  --transition: 220ms cubic-bezier(0.2, 0.6, 0.2, 1);
+  --shadow-sm: 0 1px 2px rgba(16,23,38,0.05);
+  --shadow-md: 0 10px 24px -14px rgba(16,23,38,0.20);
+  --shadow-lg: 0 28px 60px -28px rgba(16,23,38,0.34);
+  /* Hover/interaction transitions kept snappy (<=200ms) per polish spec. */
+  --transition:      200ms cubic-bezier(0.2, 0.6, 0.2, 1);
+  --transition-fast: 140ms cubic-bezier(0.2, 0.6, 0.2, 1);
+  --ease-out:        cubic-bezier(0.16, 1, 0.3, 1);
 
-  --header-h: 84px;
+  --header-h: 80px;
 }

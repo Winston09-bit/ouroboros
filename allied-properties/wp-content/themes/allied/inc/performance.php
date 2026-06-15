@@ -55,3 +55,18 @@ add_action( 'after_setup_theme', function () {
 add_action( 'wp_footer', function () {
 	wp_dequeue_script( 'wp-embed' );
 } );
+
+/**
+ * Default favicon / app icons — used only when the admin has NOT set a Site
+ * Icon under Appearance → Customize → Site Identity. Lets the site ship with a
+ * proper on-brand favicon out of the box; the admin's Site Icon always wins.
+ */
+add_action( 'wp_head', function () {
+	if ( has_site_icon() ) {
+		return;
+	}
+	$uri = get_template_directory_uri() . '/assets/img';
+	printf( '<link rel="icon" href="%s/favicon.svg" type="image/svg+xml" />' . "\n", esc_url( $uri ) );
+	printf( '<link rel="icon" href="%s/favicon-512.png" sizes="512x512" type="image/png" />' . "\n", esc_url( $uri ) );
+	printf( '<link rel="apple-touch-icon" href="%s/favicon-180.png" />' . "\n", esc_url( $uri ) );
+}, 2 );

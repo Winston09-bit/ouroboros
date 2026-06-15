@@ -54,9 +54,11 @@ get_header();
 	<div class="container">
 		<div class="statbar">
 			<div class="stat"><div class="stat__num"><?php esc_html_e( '2', 'allied' ); ?></div><div class="stat__label"><?php esc_html_e( 'Core markets — NE North Carolina & Hampton Roads', 'allied' ); ?></div></div>
-			<div class="stat"><div class="stat__num"><?php esc_html_e( '—', 'allied' ); ?></div><div class="stat__label"><?php esc_html_e( 'Lots delivered (edit in template)', 'allied' ); ?></div></div>
-			<div class="stat"><div class="stat__num"><?php esc_html_e( '—', 'allied' ); ?></div><div class="stat__label"><?php esc_html_e( 'Acres under development', 'allied' ); ?></div></div>
-			<div class="stat"><div class="stat__num"><?php esc_html_e( '—', 'allied' ); ?></div><div class="stat__label"><?php esc_html_e( 'Builder partners', 'allied' ); ?></div></div>
+			<div class="stat"><div class="stat__num"><?php esc_html_e( 'End-to-end', 'allied' ); ?></div><div class="stat__label"><?php esc_html_e( 'Acquisition, entitlement, and horizontal development handled in-house', 'allied' ); ?></div></div>
+			<div class="stat"><div class="stat__num"><?php esc_html_e( 'Builder-ready', 'allied' ); ?></div><div class="stat__label"><?php esc_html_e( 'Finished, shovel-ready lots delivered to builder specification', 'allied' ); ?></div></div>
+			<div class="stat"><div class="stat__num"><?php esc_html_e( 'Institutional', 'allied' ); ?></div><div class="stat__label"><?php esc_html_e( 'Underwriting and reporting built for lenders and capital partners', 'allied' ); ?></div></div>
+				<?php /* Once real figures are confirmed, swap a stat for e.g.:
+				<div class="stat"><div class="stat__num">1,200+</div><div class="stat__label">Finished lots delivered</div></div> */ ?>
 		</div>
 	</div>
 </section>

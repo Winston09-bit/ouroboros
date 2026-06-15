@@ -36,13 +36,16 @@
   display: flex; align-items: center; justify-content: space-between;
   min-height: var(--header-h); gap: var(--space-lg);
 }
-.site-brand { font-family: var(--font-display); font-size: 1.35rem; letter-spacing: 0.02em; text-decoration: none; color: var(--color-ink); display: flex; align-items: center; gap: 0.6rem; }
+.site-brand { font-family: var(--font-display); font-size: 1.4rem; letter-spacing: 0.01em; text-decoration: none; color: var(--color-ink); display: flex; align-items: center; gap: 0.6rem; transition: color var(--transition-fast); }
+.site-brand:hover { color: var(--color-primary); }
 .site-brand strong { font-weight: 500; }
-.site-brand .site-brand__mark { width: 30px; height: 30px; flex: none; }
+.site-brand .site-brand__mark { width: 30px; height: 30px; flex: none; color: var(--color-accent-600); }
 
 .primary-nav ul { list-style: none; display: flex; gap: var(--space-md); margin: 0; padding: 0; }
-.primary-nav a { text-decoration: none; color: var(--color-ink); font-size: var(--fs-small); font-weight: 500; letter-spacing: 0.01em; padding-block: 0.4rem; border-bottom: 2px solid transparent; }
-.primary-nav a:hover, .primary-nav .current-menu-item > a { color: var(--color-primary); border-bottom-color: var(--color-accent); }
+.primary-nav a { position: relative; text-decoration: none; color: var(--color-ink); font-size: var(--fs-small); font-weight: 500; letter-spacing: 0.01em; padding-block: 0.5rem; }
+.primary-nav a::after { content: ""; position: absolute; left: 0; right: 100%; bottom: 0; height: 2px; background: var(--color-accent); transition: right var(--transition); }
+.primary-nav a:hover, .primary-nav .current-menu-item > a { color: var(--color-primary); }
+.primary-nav a:hover::after, .primary-nav .current-menu-item > a::after { right: 0; }
 .header-actions { display: flex; align-items: center; gap: var(--space-sm); }
 
 .nav-toggle { display: none; background: none; border: 1px solid var(--color-line); border-radius: var(--radius); padding: 0.5rem 0.7rem; cursor: pointer; color: var(--color-ink); }

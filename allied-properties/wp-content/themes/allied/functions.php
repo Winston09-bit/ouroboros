@@ -15,6 +15,7 @@ $allied_includes = array(
 	'/inc/cpt-community.php',
 	'/inc/portal-roles.php',
 	'/inc/template-functions.php',
+	'/inc/performance.php',
 );
 
 foreach ( $allied_includes as $file ) {

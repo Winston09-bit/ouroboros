@@ -88,6 +88,8 @@ define('AUTH_KEY','k1');define('SECURE_AUTH_KEY','k2');define('LOGGED_IN_KEY','k
 define('AUTH_SALT','s1');define('SECURE_AUTH_SALT','s2');define('LOGGED_IN_SALT','s3');define('NONCE_SALT','s4');
 \$table_prefix='wp_';
 define('WP_DEBUG', true); define('WP_DEBUG_LOG', true); define('WP_DEBUG_DISPLAY', false);
+define('SCRIPT_DEBUG', true);
+define('DISABLE_WP_CRON', true);  // no loopback cron stalls on the single-process dev server
 define('WP_HOME','http://localhost:${PORT}'); define('WP_SITEURL','http://localhost:${PORT}');
 if (!defined('ABSPATH')) define('ABSPATH', __DIR__ . '/');
 require_once ABSPATH . 'wp-settings.php';
@@ -122,5 +124,8 @@ fi
 
 log "Starting PHP server on 0.0.0.0:${PORT} (Ctrl+C to stop)…"
 export ALLIED_WP_ROOT="$WPROOT"
+# Multiple workers so the single-process dev server doesn't serialize parallel
+# asset/page requests (the usual cause of "pages hang" on php -S).
+export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-4}"
 exec php -d display_errors=0 -d upload_max_filesize=16M -d post_max_size=16M \
   -S 0.0.0.0:"${PORT}" "$DIR/router.php"

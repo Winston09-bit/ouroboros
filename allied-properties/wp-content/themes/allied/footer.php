@@ -38,7 +38,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 			<div>
 				<h4><?php esc_html_e( 'Engage', 'allied' ); ?></h4>
 				<ul>
-					<li><a href="<?php echo esc_url( home_url( '/landowners/' ) ); ?>"><?php esc_html_e( 'Sell Us Your Land', 'allied' ); ?></a></li>
+					<li><a href="<?php echo esc_url( home_url( '/sell-us-your-land/' ) ); ?>"><?php esc_html_e( 'Sell Us Your Land', 'allied' ); ?></a></li>
 					<li><a href="<?php echo esc_url( home_url( '/portals/' ) ); ?>"><?php esc_html_e( 'Partner Portals', 'allied' ); ?></a></li>
 					<li><a href="<?php echo esc_url( home_url( '/contact/' ) ); ?>"><?php esc_html_e( 'Contact', 'allied' ); ?></a></li>
 				</ul>

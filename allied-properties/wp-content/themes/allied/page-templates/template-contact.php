@@ -38,7 +38,7 @@ while ( have_posts() ) :
 				</div>
 				<div>
 					<p class="eyebrow"><?php esc_html_e( 'Landowners', 'allied' ); ?></p>
-					<p><a class="link-arrow" href="<?php echo esc_url( home_url( '/landowners/' ) ); ?>"><?php esc_html_e( 'Sell us your land', 'allied' ); ?></a></p>
+					<p><a class="link-arrow" href="<?php echo esc_url( home_url( '/sell-us-your-land/' ) ); ?>"><?php esc_html_e( 'Sell us your land', 'allied' ); ?></a></p>
 				</div>
 			</div>
 

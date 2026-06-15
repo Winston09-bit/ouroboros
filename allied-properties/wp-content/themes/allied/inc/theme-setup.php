@@ -89,7 +89,7 @@ function allied_starter_content() {
 			'landowners' => array(
 				'post_type'    => 'page',
 				'post_title'   => __( 'Sell Us Your Land', 'allied' ),
-				'post_name'    => 'landowners',
+				'post_name'    => 'sell-us-your-land',
 				'post_excerpt' => __( 'Have residential land in our footprint? We would like to hear from you.', 'allied' ),
 				'template'     => 'page-templates/template-landowner.php',
 			),

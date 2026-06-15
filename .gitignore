@@ -5,3 +5,6 @@ kvittovalvet-web/node_modules/
 kvittovalvet-web/.env.local
 *.env
 *.env.local
+
+# Allied preview runtime (downloaded WP core + sqlite db)
+allied-properties/preview/.runtime/

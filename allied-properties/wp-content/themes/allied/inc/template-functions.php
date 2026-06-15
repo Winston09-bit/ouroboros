@@ -57,7 +57,7 @@ function allied_default_menu() {
 		'/capabilities/' => __( 'Capabilities', 'allied' ),
 		'/communities/'  => __( 'Communities', 'allied' ),
 		'/partners/'     => __( 'Partners', 'allied' ),
-		'/landowners/'   => __( 'Landowners', 'allied' ),
+		'/sell-us-your-land/' => __( 'Landowners', 'allied' ),
 		'/contact/'      => __( 'Contact', 'allied' ),
 	);
 	echo '<ul>';

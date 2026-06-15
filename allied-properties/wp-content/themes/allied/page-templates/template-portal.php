@@ -17,13 +17,10 @@ get_header();
 while ( have_posts() ) :
 	the_post();
 
-	$slug    = get_post_field( 'post_name', get_the_ID() );
-	$portals = allied_portals();
-	// Fall back to 'partner' gating if the slug isn't one of the known portals.
-	if ( ! isset( $portals[ $slug ] ) ) {
-		$slug = 'partner';
-	}
-	$label = $portals[ $slug ];
+	$slug          = get_post_field( 'post_name', get_the_ID() );
+	$portals       = allied_portals();
+	$misconfigured = ! isset( $portals[ $slug ] );
+	$label         = $misconfigured ? get_the_title() : $portals[ $slug ];
 	?>
 	<section class="page-banner">
 		<div class="container">
@@ -35,8 +32,24 @@ while ( have_posts() ) :
 	<section class="section">
 		<div class="container">
 			<?php
+			if ( $misconfigured ) :
+				// No silent fallback: a Portal page whose slug isn't builder/
+				// investor/partner is a misconfiguration. Warn admins clearly and
+				// deny everyone else (fail closed).
+				if ( current_user_can( 'manage_options' ) ) {
+					echo '<div class="notice" style="border-left:3px solid #b3261e;">';
+					printf(
+						/* translators: %1$s page slug, %2$s allowed slugs */
+						'<strong>' . esc_html__( 'Admin notice:', 'allied' ) . '</strong> ' . esc_html__( 'This page uses the “Portal (Gated)” template but its slug “%1$s” is not a recognised portal. Set the page slug to one of: %2$s so access control applies correctly.', 'allied' ),
+						esc_html( $slug ),
+						'<code>builder</code>, <code>investor</code>, <code>partner</code>'
+					);
+					echo '</div>';
+				} else {
+					echo '<div class="portal-login"><h3>' . esc_html__( 'Portal unavailable', 'allied' ) . '</h3><p class="text-muted">' . esc_html__( 'This portal is not currently available. Please contact Allied Properties.', 'allied' ) . '</p></div>';
+				}
 			// Gate. Renders login / access-denied and returns false when blocked.
-			if ( allied_portal_gate( $slug, $label ) ) :
+			elseif ( allied_portal_gate( $slug, $label ) ) :
 				?>
 				<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-lg);">
 					<p class="text-muted" style="margin:0;"><?php printf( esc_html__( 'Signed in as %s.', 'allied' ), esc_html( wp_get_current_user()->display_name ) ); ?></p>

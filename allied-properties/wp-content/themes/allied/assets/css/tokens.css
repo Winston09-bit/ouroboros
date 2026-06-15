@@ -1,0 +1,80 @@
+/* ==========================================================================
+   DESIGN TOKENS  —  Allied Properties
+   --------------------------------------------------------------------------
+   THIS IS THE ONLY FILE YOU NEED TO EDIT TO MATCH THE HOMEPAGE MOCKUP.
+
+   The values below are PLACEHOLDERS chosen to express the written brief
+   (institutional, restrained, confident, photography-forward). Replace the
+   palette, fonts, and scale with the exact values from the approved mockup.
+   Everything else in the theme references these custom properties.
+   ========================================================================== */
+
+:root {
+  /* --- Brand palette (PLACEHOLDER — replace with mockup values) --- */
+  --color-ink:        #16202c; /* primary text / near-black navy */
+  --color-primary:    #14223a; /* deep institutional navy        */
+  --color-primary-700:#0e1726;
+  --color-accent:     #9a7b4f; /* restrained brass/gold accent   */
+  --color-accent-600: #836842;
+
+  --color-bg:         #ffffff; /* page background                */
+  --color-surface:    #f5f2ec; /* warm paper / section bands     */
+  --color-surface-2:  #eceae3;
+  --color-line:       #d8d4cb; /* hairline borders               */
+  --color-muted:      #5f6b78; /* secondary text                 */
+  --color-on-dark:    #f3f1ea; /* text on dark sections          */
+  --color-on-dark-mut:#aeb6bf;
+
+  --color-focus:      #5b8def; /* a11y focus ring                */
+
+  /* --- Typography (PLACEHOLDER — replace with mockup fonts) ---
+     Default pairing: a serif display for headings + a neutral grotesk
+     for body. Self-host the final fonts (see HANDOFF.md) to honor the
+     "no external dependency" boundary. */
+  --font-display: "Canela", "Tiempos Headline", Georgia, "Times New Roman", serif;
+  --font-body:    "Inter", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono:    ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Fluid type scale (clamp: min, preferred, max) */
+  --fs-eyebrow: 0.78rem;
+  --fs-small:   0.875rem;
+  --fs-body:    clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
+  --fs-lead:    clamp(1.15rem, 1.05rem + 0.5vw, 1.375rem);
+  --fs-h4:      clamp(1.15rem, 1.05rem + 0.5vw, 1.4rem);
+  --fs-h3:      clamp(1.4rem, 1.2rem + 1vw, 1.9rem);
+  --fs-h2:      clamp(1.9rem, 1.5rem + 2vw, 2.9rem);
+  --fs-h1:      clamp(2.4rem, 1.8rem + 3.2vw, 4.2rem);
+  --fs-display: clamp(2.8rem, 1.9rem + 4.5vw, 5.5rem);
+
+  --lh-tight: 1.08;
+  --lh-snug:  1.25;
+  --lh-base:  1.6;
+
+  --tracking-eyebrow: 0.18em;
+  --tracking-tight:  -0.01em;
+
+  /* --- Spacing scale --- */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs:  0.75rem;
+  --space-sm:  1rem;
+  --space-md:  1.5rem;
+  --space-lg:  2.5rem;
+  --space-xl:  4rem;
+  --space-2xl: 6rem;
+  --space-3xl: 9rem;
+
+  /* --- Layout --- */
+  --container:      1240px;
+  --container-narrow: 820px;
+  --gutter:         clamp(1.25rem, 4vw, 3rem);
+  --radius:         2px;   /* institutional = minimal rounding */
+  --radius-lg:      4px;
+
+  /* --- Effects --- */
+  --shadow-sm: 0 1px 2px rgba(16,23,38,0.06);
+  --shadow-md: 0 12px 30px -12px rgba(16,23,38,0.22);
+  --transition: 220ms cubic-bezier(0.2, 0.6, 0.2, 1);
+
+  --header-h: 84px;
+}

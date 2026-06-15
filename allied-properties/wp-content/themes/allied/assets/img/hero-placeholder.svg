@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder for aerial site photography">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2c44"/>
+      <stop offset="1" stop-color="#0e1726"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <g fill="none" stroke="#9a7b4f" stroke-opacity="0.35" stroke-width="2">
+    <path d="M0 620 Q 400 560 800 600 T 1600 580"/>
+    <path d="M0 680 Q 400 640 800 660 T 1600 650"/>
+    <path d="M200 900 L 360 600 M 520 900 L 600 600 M 900 900 L 880 600 M 1300 900 L 1180 600"/>
+  </g>
+  <text x="800" y="470" text-anchor="middle" fill="#aeb6bf" font-family="Georgia, serif" font-size="34" letter-spacing="2">Aerial / site photography to be supplied</text>
+</svg>

@@ -1,0 +1,28 @@
+/*
+Theme Name: Allied Properties
+Theme URI: https://alliedproperties.example
+Author: Allied Properties
+Description: Institutional marketing site and gated portals for Allied Properties — a residential land development firm operating across Northeastern North Carolina and Hampton Roads, Virginia. Restrained, credibility-first design system, photography-forward, fully responsive and accessible. Phase 1.
+Version: 0.1.0
+Requires at least: 6.4
+Tested up to: 6.5
+Requires PHP: 8.0
+License: Proprietary
+Text Domain: allied
+*/
+
+/*
+ * NOTE ON STYLES
+ * --------------
+ * This file holds only the WordPress theme header (required by WP).
+ * The actual styling is split into modular files under assets/css/ and
+ * enqueued from inc/enqueue.php in this order:
+ *
+ *   1. tokens.css      -> design tokens (colors, type, spacing) — SWAP THESE TO MATCH THE MOCKUP
+ *   2. base.css        -> resets, typography, base elements
+ *   3. layout.css      -> grid, containers, header/footer scaffolding
+ *   4. components.css  -> buttons, cards, forms, hero, portals
+ *
+ * To re-skin the site to the approved homepage mockup, you should only
+ * need to edit assets/css/tokens.css. Everything else references tokens.
+ */

@@ -1,0 +1,33 @@
+# Local preview for the Allied Properties theme.
+# Spins up WordPress + MySQL with the custom theme mounted.
+#   docker compose up -d   ->   http://localhost:8088
+# Run the WP installer, then activate the "Allied Properties" theme.
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: allied
+      MARIADB_USER: allied
+      MARIADB_PASSWORD: allied
+      MARIADB_ROOT_PASSWORD: allied_root
+    volumes:
+      - db_data:/var/lib/mysql
+
+  wordpress:
+    image: wordpress:6.5-php8.2-apache
+    depends_on:
+      - db
+    ports:
+      - "8088:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: allied
+      WORDPRESS_DB_USER: allied
+      WORDPRESS_DB_PASSWORD: allied
+      WORDPRESS_DEBUG: 1
+    volumes:
+      # Mount only the theme so it appears in Appearance > Themes.
+      - ./wp-content/themes/allied:/var/www/html/wp-content/themes/allied
+
+volumes:
+  db_data:

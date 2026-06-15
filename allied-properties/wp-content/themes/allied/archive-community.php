@@ -41,7 +41,11 @@ get_header();
 			</div>
 			<div class="section--tight"><?php the_posts_pagination( array( 'mid_size' => 1 ) ); ?></div>
 		<?php else : ?>
-			<p class="notice notice--info"><?php esc_html_e( 'No communities published yet. Add them under Communities in the WordPress admin.', 'allied' ); ?></p>
+			<div class="empty-state">
+				<h3><?php esc_html_e( 'Communities coming soon', 'allied' ); ?></h3>
+				<p><?php esc_html_e( 'Our current portfolio is being prepared. To discuss active and upcoming communities, please get in touch.', 'allied' ); ?></p>
+				<p style="margin-top:var(--space-sm);"><a class="btn btn--primary" href="<?php echo esc_url( home_url( '/contact/' ) ); ?>"><?php esc_html_e( 'Contact the team', 'allied' ); ?></a></p>
+			</div>
 		<?php endif; ?>
 	</div>
 </section>

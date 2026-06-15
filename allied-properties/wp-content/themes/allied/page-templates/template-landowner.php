@@ -123,8 +123,8 @@ while ( have_posts() ) :
 
 			<div>
 				<?php if ( $submission['status'] ) : ?>
-					<div class="notice <?php echo $submission['status'] === 'success' ? 'notice--info' : ''; ?>" role="status" style="margin-bottom:var(--space-md);<?php echo $submission['status'] === 'error' ? 'border-left:3px solid #b3261e;' : ''; ?>">
-						<?php echo esc_html( $submission['message'] ); ?>
+					<div class="notice <?php echo $submission['status'] === 'success' ? 'notice--success' : 'notice--error'; ?>" role="<?php echo $submission['status'] === 'success' ? 'status' : 'alert'; ?>" style="margin-bottom:var(--space-md);">
+						<span><?php echo esc_html( $submission['message'] ); ?></span>
 					</div>
 				<?php endif; ?>
 

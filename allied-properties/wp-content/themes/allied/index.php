@@ -34,7 +34,11 @@ get_header();
 			</div>
 			<div class="section--tight"><?php the_posts_pagination( array( 'mid_size' => 1 ) ); ?></div>
 		<?php else : ?>
-			<p class="lead"><?php esc_html_e( 'Nothing found.', 'allied' ); ?></p>
+			<div class="empty-state">
+				<h3><?php esc_html_e( 'Nothing found', 'allied' ); ?></h3>
+				<p><?php is_search() ? esc_html_e( 'No results matched your search. Try a different term, or explore our communities.', 'allied' ) : esc_html_e( 'There is nothing here yet.', 'allied' ); ?></p>
+				<p style="margin-top:var(--space-sm);"><a class="btn btn--ghost" href="<?php echo esc_url( home_url( '/communities/' ) ); ?>"><?php esc_html_e( 'View communities', 'allied' ); ?></a></p>
+			</div>
 		<?php endif; ?>
 	</div>
 </section>

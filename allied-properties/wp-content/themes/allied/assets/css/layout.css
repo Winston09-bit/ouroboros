@@ -48,13 +48,29 @@
 .primary-nav a:hover::after, .primary-nav .current-menu-item > a::after { right: 0; }
 .header-actions { display: flex; align-items: center; gap: var(--space-sm); }
 
-.nav-toggle { display: none; background: none; border: 1px solid var(--color-line); border-radius: var(--radius); padding: 0.5rem 0.7rem; cursor: pointer; color: var(--color-ink); }
+.nav-toggle { display: none; background: none; border: 1px solid var(--color-line); border-radius: var(--radius); padding: 0.6rem 0.8rem; min-height: 44px; cursor: pointer; color: var(--color-ink); font-size: var(--fs-small); font-weight: 600; transition: border-color var(--transition-fast), color var(--transition-fast); }
+.nav-toggle:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.nav-toggle:active { transform: translateY(1px); }
 
 @media (max-width: 980px) {
   .nav-toggle { display: inline-flex; align-items: center; gap: 0.5rem; }
-  .primary-nav { position: fixed; inset: var(--header-h) 0 auto 0; background: var(--color-bg); border-bottom: 1px solid var(--color-line); transform: translateY(-120%); transition: transform var(--transition); padding: var(--space-md) var(--gutter); }
+  .primary-nav {
+    position: fixed; inset: var(--header-h) 0 auto 0;
+    background: var(--color-bg); border-bottom: 1px solid var(--color-line);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-120%); transition: transform var(--transition) var(--ease-out);
+    padding: var(--space-sm) var(--gutter) var(--space-lg);
+    max-height: calc(100dvh - var(--header-h)); overflow-y: auto;
+  }
   .primary-nav.is-open { transform: translateY(0); }
-  .primary-nav ul { flex-direction: column; gap: var(--space-sm); }
+  .primary-nav ul { flex-direction: column; gap: 0; }
+  /* Generous tap targets + clear separators on mobile. */
+  .primary-nav li { border-bottom: 1px solid var(--color-line); }
+  .primary-nav a { display: block; padding: 0.95rem 0; min-height: 44px; }
+  .primary-nav a::after { display: none; }
+  .primary-nav a:hover, .primary-nav .current-menu-item > a { color: var(--color-primary); }
+  /* Lock background scroll while the menu is open. */
+  body.nav-open { overflow: hidden; }
 }
 
 /* ---- Site footer ---- */

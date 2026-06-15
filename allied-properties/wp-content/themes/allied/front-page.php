@@ -110,7 +110,9 @@ get_header();
 				}
 				wp_reset_postdata();
 			} else {
-				echo '<p class="notice notice--info">' . esc_html__( 'Add Communities in the WordPress admin to populate this grid.', 'allied' ) . '</p>';
+				echo '<div class="empty-state" style="grid-column:1/-1;"><h3>' . esc_html__( 'Portfolio in preparation', 'allied' ) . '</h3><p>' . esc_html__( 'We are finalising our current community listings. Reach out to discuss active and upcoming projects.', 'allied' ) . '</p>';
+					if ( current_user_can( 'edit_posts' ) ) { echo '<p class="form-note" style="margin-top:var(--space-sm);">' . esc_html__( 'Admin: add entries under Communities to populate this grid automatically.', 'allied' ) . '</p>'; }
+					echo '</div>';
 			}
 			?>
 		</div>

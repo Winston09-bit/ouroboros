@@ -10,7 +10,7 @@ from openpyxl import load_workbook
 EXPECTED_SHEETS = (
     ["Dashboard"] +
     ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] +
-    ["Debt Tracker","Bill Calendar","Savings Goals","Annual Overview"]
+    ["Annual Overview","Debt Tracker","Bill Calendar","Savings Goals","Spending Tracker"]
 )
 ERROR_TOKENS = ["#REF!","#DIV/0!","#VALUE!","#N/A","#NAME?","#NULL!"]
 

@@ -5,3 +5,4 @@ kvittovalvet-web/node_modules/
 kvittovalvet-web/.env.local
 *.env
 *.env.local
+node_modules/

@@ -887,7 +887,7 @@ for i, (name, orig, balance, apr, min_pmt, mo_pmt) in enumerate(SAMPLE_DEBTS):
     ws.cell(r,5,min_pmt); ws.cell(r,5).number_format = "#,##0.00"; ws.cell(r,5).fill = hfill(CREAM)
     ws.cell(r,6,mo_pmt);  ws.cell(r,6).number_format = "#,##0.00"; ws.cell(r,6).fill = hfill(CREAM)
     # Months to payoff: NPER using col D=APR, F=MonthlyPayment, C=CurrentBalance
-    ws.cell(r,7,f'=IF(OR(D{r}=0,F{r}=0),IF(F{r}=0,0,CEILING(C{r}/F{r},1)),IFERROR(-NPER(D{r}/100/12,-F{r},C{r}),0))')
+    ws.cell(r,7,f'=IF(OR(D{r}=0,F{r}=0),IF(F{r}=0,0,CEILING(C{r}/F{r},1)),IFERROR(NPER(D{r}/100/12,-F{r},C{r}),0))')
     ws.cell(r,7).number_format = "0.0"
     ws.cell(r,7).fill = hfill(LT_SAGE)
     # Total interest
@@ -899,16 +899,22 @@ for i, (name, orig, balance, apr, min_pmt, mo_pmt) in enumerate(SAMPLE_DEBTS):
     ws.cell(r,9).number_format = "0%"
     ws.cell(r,9).fill = hfill(CREAM)
 
-# Add 7 blank rows (rows 8-14)
+# Add 7 blank rows (rows 8-14) for a total of 12 debt rows
 for i in range(7):
     r = 8 + i
-    for c in range(1, 10):
-        ws.cell(r,c,"" if c == 1 else None)
-        ws.cell(r,c).fill = hfill(CREAM if c in [1,2,3,4,5,6] else LT_SAGE)
-        if c == 9:
-            ws.cell(r,9,f'=IF(B{r}=0,0,MAX(0,(B{r}-C{r})/B{r}))')
-            ws.cell(r,9).number_format = "0%"
-            ws.cell(r,9).fill = hfill(CREAM)
+    for c in [1,2,3,4,5,6]:
+        ws.cell(r,c).fill = hfill(CREAM)
+        ws.cell(r,c).font = font()
+        if c in [2,3,5,6]:
+            ws.cell(r,c).number_format = "#,##0.00"
+        elif c == 4:
+            ws.cell(r,c).number_format = "0.00"
+    ws.cell(r,7,f'=IF(OR(D{r}=0,F{r}=0),IF(F{r}=0,0,CEILING(C{r}/F{r},1)),IFERROR(NPER(D{r}/100/12,-F{r},C{r}),0))')
+    ws.cell(r,7).number_format = "0.0"; ws.cell(r,7).fill = hfill(LT_SAGE)
+    ws.cell(r,8,f'=IFERROR(MAX(0,G{r}*F{r}-C{r}),0)')
+    ws.cell(r,8).number_format = "#,##0.00"; ws.cell(r,8).fill = hfill(LT_SAGE)
+    ws.cell(r,9,f'=IF(B{r}=0,0,MAX(0,(B{r}-C{r})/B{r}))')
+    ws.cell(r,9).number_format = "0%"; ws.cell(r,9).fill = hfill(CREAM)
 
 # ColorScale CF on % Paid Off col I (I3:I14)
 ws.conditional_formatting.add(
@@ -1552,7 +1558,8 @@ print("Sheets:", ", ".join(wb.sheetnames))
 from openpyxl import load_workbook
 
 print("\n--- VERIFICATION ---")
-wb2 = load_workbook(output_path, data_only=True)
+# Load without data_only to count formulas; errors will be literal strings like #REF! in formula text
+wb2 = load_workbook(output_path)
 print(f"Sheet count: {len(wb2.sheetnames)}")
 
 error_vals = {"#REF!", "#DIV/0!", "#VALUE!", "#N/A", "#NAME?", "#NUM!", "#NULL!"}

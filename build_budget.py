@@ -10,7 +10,7 @@ from openpyxl.styles import (PatternFill, Font, Alignment, Border, Side,
 from openpyxl.chart import BarChart, DoughnutChart, Reference, Series
 from openpyxl.chart.series import SeriesLabel
 from openpyxl.worksheet.datavalidation import DataValidation
-from openpyxl.formatting.rule import (ColorScaleRule, DataBarRule,
+from openpyxl.formatting.rule import (ColorScaleRule,
                                        CellIsRule, FormulaRule)
 from openpyxl.utils import get_column_letter
 from openpyxl.workbook.defined_name import DefinedName
@@ -110,18 +110,18 @@ MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
           "Jul","Aug","Sep","Oct","Nov","Dec"]
 
 SAMPLE_TRANSACTIONS = [
-    ("2024-01-05","Income","Salary","Checking","January Salary",5000),
-    ("2024-01-10","Expense","Rent/Mortgage","Checking","January Rent",1500),
-    ("2024-01-12","Expense","Groceries","Checking","Grocery Run",120),
-    ("2024-01-15","Expense","Utilities","Checking","Electric Bill",80),
-    ("2024-01-20","Expense","Dining Out","Credit Card","Restaurant",45),
-    ("2024-02-05","Income","Salary","Checking","February Salary",5000),
-    ("2024-02-08","Expense","Rent/Mortgage","Checking","February Rent",1500),
-    ("2024-02-14","Expense","Groceries","Checking","Grocery Run",135),
-    ("2024-02-18","Expense","Entertainment","Credit Card","Netflix+Cinema",60),
-    ("2024-03-05","Income","Salary","Checking","March Salary",5000),
-    ("2024-03-07","Expense","Rent/Mortgage","Checking","March Rent",1500),
-    ("2024-03-15","Expense","Groceries","Checking","Grocery Run",110),
+    ("2026-01-05","Income","Salary","Checking","January Salary",5000),
+    ("2026-01-10","Expense","Rent/Mortgage","Checking","January Rent",1500),
+    ("2026-01-12","Expense","Groceries","Checking","Grocery Run",120),
+    ("2026-01-15","Expense","Utilities","Checking","Electric Bill",80),
+    ("2026-01-20","Expense","Dining Out","Credit Card","Restaurant",45),
+    ("2026-02-05","Income","Salary","Checking","February Salary",5000),
+    ("2026-02-08","Expense","Rent/Mortgage","Checking","February Rent",1500),
+    ("2026-02-14","Expense","Groceries","Checking","Grocery Run",135),
+    ("2026-02-18","Expense","Entertainment","Credit Card","Netflix+Cinema",60),
+    ("2026-03-05","Income","Salary","Checking","March Salary",5000),
+    ("2026-03-07","Expense","Rent/Mortgage","Checking","March Rent",1500),
+    ("2026-03-15","Expense","Groceries","Checking","Grocery Run",110),
 ]
 
 TAB_NAMES = [
@@ -137,10 +137,24 @@ TAB_NAMES = [
 wb = Workbook()
 wb.remove(wb.active)   # remove default sheet
 
+TAB_COLORS = {
+    "Start Here": FOREST, "Dashboard": FOREST, "Overview": FOREST,
+    "Settings": SAGE, "Transactions": SAGE, "Recurring": SAGE, "Annual Summary": SAGE,
+    "Jan": "C9D2BB", "Feb": "C9D2BB", "Mar": "C9D2BB", "Apr": "C9D2BB",
+    "May": "C9D2BB", "Jun": "C9D2BB", "Jul": "C9D2BB", "Aug": "C9D2BB",
+    "Sep": "C9D2BB", "Oct": "C9D2BB", "Nov": "C9D2BB", "Dec": "C9D2BB",
+    "Bill Calendar": ROSE, "Debt Tracker": ROSE, "Savings Goals": ROSE,
+    "Sinking Funds": ROSE, "Net Worth": ROSE, "Subscriptions": ROSE,
+    "Income Tracker": ROSE, "Spending Analysis": ROSE, "No-Spend Tracker": ROSE,
+    "Budget vs Actual": ROSE, "Changelog": ROSE,
+}
+
 sheets = {}
 for name in TAB_NAMES:
     ws = wb.create_sheet(name)
     ws.sheet_view.showGridLines = False
+    if name in TAB_COLORS:
+        ws.sheet_properties.tabColor = TAB_COLORS[name]
     sheets[name] = ws
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -157,7 +171,7 @@ write_merged(ws,1,1,3,"⚙  Settings",
 
 # Budget Year
 ws.cell(2,1,"Budget Year").font = font(bold=True)
-ws.cell(2,2,2024).fill = hfill(CREAM)
+ws.cell(2,2,2026).fill = hfill(CREAM)
 ws.cell(2,2).font = font()
 
 # Currency
@@ -579,16 +593,16 @@ for c, h in enumerate(HDRS_REC, 1):
     ws.cell(2,c).alignment = align("center")
 
 SAMPLE_RECURRING = [
-    ("Rent",         "Rent/Mortgage", 1500, "Monthly",  1,  "Checking",    "Unpaid", "2024-02-01"),
-    ("Netflix",      "Subscriptions",   16, "Monthly",  5,  "Credit Card", "Paid",   "2024-02-05"),
-    ("Gym",          "Gym/Fitness",     50, "Monthly",  3,  "Credit Card", "Paid",   "2024-02-03"),
-    ("Phone",        "Phone",           80, "Monthly",  10, "Checking",    "Unpaid", "2024-02-10"),
-    ("Internet",     "Internet",        60, "Monthly",  15, "Checking",    "Unpaid", "2024-02-15"),
-    ("Car Insurance","Insurance",      120, "Monthly",  20, "Checking",    "Unpaid", "2024-02-20"),
-    ("Spotify",      "Subscriptions",   10, "Monthly",  8,  "Credit Card", "Paid",   "2024-02-08"),
-    ("Amazon Prime", "Subscriptions",   15, "Monthly",  12, "Credit Card", "Unpaid", "2024-02-12"),
-    ("Health Ins",   "Insurance",      200, "Monthly",  25, "Checking",    "Unpaid", "2024-02-25"),
-    ("Electric Bill","Utilities",       80, "Monthly",  18, "Checking",    "Overdue","2024-01-18"),
+    ("Rent",         "Rent/Mortgage", 1500, "Monthly",  1,  "Checking",    "Unpaid", "2026-02-01"),
+    ("Netflix",      "Subscriptions",   16, "Monthly",  5,  "Credit Card", "Paid",   "2026-02-05"),
+    ("Gym",          "Gym/Fitness",     50, "Monthly",  3,  "Credit Card", "Paid",   "2026-02-03"),
+    ("Phone",        "Phone",           80, "Monthly",  10, "Checking",    "Unpaid", "2026-02-10"),
+    ("Internet",     "Internet",        60, "Monthly",  15, "Checking",    "Unpaid", "2026-02-15"),
+    ("Car Insurance","Insurance",      120, "Monthly",  20, "Checking",    "Unpaid", "2026-02-20"),
+    ("Spotify",      "Subscriptions",   10, "Monthly",  8,  "Credit Card", "Paid",   "2026-02-08"),
+    ("Amazon Prime", "Subscriptions",   15, "Monthly",  12, "Credit Card", "Unpaid", "2026-02-12"),
+    ("Health Ins",   "Insurance",      200, "Monthly",  25, "Checking",    "Unpaid", "2026-02-25"),
+    ("Electric Bill","Utilities",       80, "Monthly",  18, "Checking",    "Overdue","2026-01-18"),
 ]
 
 for i, row_data in enumerate(SAMPLE_RECURRING):
@@ -597,6 +611,13 @@ for i, row_data in enumerate(SAMPLE_RECURRING):
         cell = ws.cell(r, c, val)
         cell.fill = hfill(CREAM if c not in [7] else CARD)
         cell.font = font()
+
+for i in range(15):
+    r = 13 + i
+    for c in range(1, 9):
+        ws.cell(r,c,"")
+        ws.cell(r,c).fill = hfill(CREAM if c != 7 else CARD)
+        ws.cell(r,c).font = font()
 
 dv_status = DataValidation(type="list", formula1='"Paid,Unpaid,Overdue"', allow_blank=True, showErrorMessage=False)
 ws.add_data_validation(dv_status)
@@ -650,7 +671,7 @@ for month_idx, month_name in enumerate(MONTHS):
     ws.column_dimensions["D"].width = 14
     ws.column_dimensions["E"].width = 12
 
-    write_merged(ws,1,1,5,f"{month_name} 2024 — Budget vs Actual",
+    write_merged(ws,1,1,5,f"{month_name} 2026 — Budget vs Actual",
         fill=hfill(FOREST), fnt=font(bold=True,size=13,color=WHITE),
         aln=align("center"))
 
@@ -679,10 +700,10 @@ for month_idx, month_name in enumerate(MONTHS):
             f'Transactions!$G$2:$G$601,{month_num},'
             f'Transactions!$C$2:$C$601,A{row}),0)')
         ws.cell(row,3).number_format = "#,##0.00"; ws.cell(row,3).fill = hfill(CARD)
-        ws.cell(row,4,f'=B{row}-C{row}')
-        ws.cell(row,4).number_format = "#,##0.00"; ws.cell(row,4).fill = hfill(CARD)
-        ws.cell(row,5,f'=IF(B{row}=0,0,C{row}/B{row})')
-        ws.cell(row,5).number_format = "0%"; ws.cell(row,5).fill = hfill(CARD)
+        ws.cell(row,4,"")
+        ws.cell(row,4).fill = hfill(CARD)
+        ws.cell(row,5,"")
+        ws.cell(row,5).fill = hfill(CARD)
         row += 1
 
     income_end = row - 1
@@ -829,19 +850,20 @@ for i in range(10):
 # ═══════════════════════════════════════════════════════════════════════════
 ws = sheets["Debt Tracker"]
 ws.column_dimensions["A"].width = 20
-ws.column_dimensions["B"].width = 14
-ws.column_dimensions["C"].width = 10
-ws.column_dimensions["D"].width = 14
-ws.column_dimensions["E"].width = 16
+ws.column_dimensions["B"].width = 16
+ws.column_dimensions["C"].width = 14
+ws.column_dimensions["D"].width = 10
+ws.column_dimensions["E"].width = 14
 ws.column_dimensions["F"].width = 16
 ws.column_dimensions["G"].width = 16
 ws.column_dimensions["H"].width = 14
+ws.column_dimensions["I"].width = 14
 
-write_merged(ws,1,1,8,"Debt Tracker",
+write_merged(ws,1,1,9,"Debt Tracker",
     fill=hfill(FOREST), fnt=font(bold=True,size=14,color=WHITE),
     aln=align("center"))
 
-HDRS_DEBT = ["Debt Name","Balance","APR (%)","Min Payment","Monthly Payment",
+HDRS_DEBT = ["Debt Name","Original Balance","Current Balance","APR (%)","Min Payment","Monthly Payment",
              "Months to Payoff","Total Interest","% Paid Off"]
 for c, h in enumerate(HDRS_DEBT, 1):
     ws.cell(2,c,h).fill = hfill(SAGE)
@@ -849,40 +871,53 @@ for c, h in enumerate(HDRS_DEBT, 1):
     ws.cell(2,c).alignment = align("center","center",wrap=True)
 
 SAMPLE_DEBTS = [
-    ("Credit Card",  3500, 19.99, 70,  150),
-    ("Car Loan",    12000,  4.50, 220, 250),
-    ("Student Loan", 25000,  5.00, 250, 300),
-    ("Personal Loan", 5000, 12.00, 100, 150),
-    ("Medical Bill",   800,  0.00,  50,  50),
+    ("Credit Card",  3800,  3500, 19.99, 70,  150),
+    ("Car Loan",    13000, 12000,  4.50, 220, 250),
+    ("Student Loan",28000, 25000,  5.00, 250, 300),
+    ("Personal Loan", 6000, 5000, 12.00, 100, 150),
+    ("Medical Bill",  1000,  800,  0.00,  50,  50),
 ]
 
-for i, (name, balance, apr, min_pmt, mo_pmt) in enumerate(SAMPLE_DEBTS):
+for i, (name, orig, balance, apr, min_pmt, mo_pmt) in enumerate(SAMPLE_DEBTS):
     r = 3 + i
     ws.cell(r,1,name).fill = hfill(CREAM); ws.cell(r,1).font = font()
-    ws.cell(r,2,balance); ws.cell(r,2).number_format = "#,##0.00"; ws.cell(r,2).fill = hfill(CREAM)
-    ws.cell(r,3,apr);     ws.cell(r,3).number_format = "0.00";     ws.cell(r,3).fill = hfill(CREAM)
-    ws.cell(r,4,min_pmt); ws.cell(r,4).number_format = "#,##0.00"; ws.cell(r,4).fill = hfill(CREAM)
-    ws.cell(r,5,mo_pmt);  ws.cell(r,5).number_format = "#,##0.00"; ws.cell(r,5).fill = hfill(CREAM)
-    # Months to payoff: NPER
-    ws.cell(r,6,f'=IF(OR(C{r}=0,E{r}=0),IF(E{r}=0,0,CEILING(B{r}/E{r},1)),IFERROR(-NPER(C{r}/100/12,-E{r},B{r}),0))')
-    ws.cell(r,6).number_format = "0.0"
-    ws.cell(r,6).fill = hfill(LT_SAGE)
-    # Total interest
-    ws.cell(r,7,f'=IFERROR(MAX(0,F{r}*E{r}-B{r}),0)')
-    ws.cell(r,7).number_format = "#,##0.00"
+    ws.cell(r,2,orig);    ws.cell(r,2).number_format = "#,##0.00"; ws.cell(r,2).fill = hfill(CREAM)
+    ws.cell(r,3,balance); ws.cell(r,3).number_format = "#,##0.00"; ws.cell(r,3).fill = hfill(CREAM)
+    ws.cell(r,4,apr);     ws.cell(r,4).number_format = "0.00";     ws.cell(r,4).fill = hfill(CREAM)
+    ws.cell(r,5,min_pmt); ws.cell(r,5).number_format = "#,##0.00"; ws.cell(r,5).fill = hfill(CREAM)
+    ws.cell(r,6,mo_pmt);  ws.cell(r,6).number_format = "#,##0.00"; ws.cell(r,6).fill = hfill(CREAM)
+    # Months to payoff: NPER using col D=APR, F=MonthlyPayment, C=CurrentBalance
+    ws.cell(r,7,f'=IF(OR(D{r}=0,F{r}=0),IF(F{r}=0,0,CEILING(C{r}/F{r},1)),IFERROR(-NPER(D{r}/100/12,-F{r},C{r}),0))')
+    ws.cell(r,7).number_format = "0.0"
     ws.cell(r,7).fill = hfill(LT_SAGE)
-    # % Paid Off placeholder (0 initial since no payments tracked yet)
-    ws.cell(r,8,0.0)
-    ws.cell(r,8).number_format = "0%"
-    ws.cell(r,8).fill = hfill(CREAM)
+    # Total interest
+    ws.cell(r,8,f'=IFERROR(MAX(0,G{r}*F{r}-C{r}),0)')
+    ws.cell(r,8).number_format = "#,##0.00"
+    ws.cell(r,8).fill = hfill(LT_SAGE)
+    # % Paid Off = (Original - Current) / Original
+    ws.cell(r,9,f'=IF(B{r}=0,0,MAX(0,(B{r}-C{r})/B{r}))')
+    ws.cell(r,9).number_format = "0%"
+    ws.cell(r,9).fill = hfill(CREAM)
 
-# Data bar CF on % Paid Off col H
-from openpyxl.formatting.rule import DataBarRule
+# Add 7 blank rows (rows 8-14)
+for i in range(7):
+    r = 8 + i
+    for c in range(1, 10):
+        ws.cell(r,c,"" if c == 1 else None)
+        ws.cell(r,c).fill = hfill(CREAM if c in [1,2,3,4,5,6] else LT_SAGE)
+        if c == 9:
+            ws.cell(r,9,f'=IF(B{r}=0,0,MAX(0,(B{r}-C{r})/B{r}))')
+            ws.cell(r,9).number_format = "0%"
+            ws.cell(r,9).fill = hfill(CREAM)
+
+# ColorScale CF on % Paid Off col I (I3:I14)
 ws.conditional_formatting.add(
-    "H3:H7",
-    DataBarRule(start_type="num", start_value=0,
-                end_type="num",   end_value=1,
-                color=SAGE))
+    "I3:I14",
+    ColorScaleRule(
+        start_type='num', start_value=0, start_color='FFFFFFFF',
+        end_type='num', end_value=1, end_color='FF404A36'
+    )
+)
 
 freeze(ws, "A3")
 
@@ -920,11 +955,19 @@ for i, (name, target, saved, td, notes) in enumerate(SAMPLE_GOALS):
     ws.cell(r,6,td).fill = hfill(CREAM); ws.cell(r,6).font = font()
     ws.cell(r,7,notes).fill = hfill(CREAM); ws.cell(r,7).font = font()
 
+for i in range(10):
+    r = 8 + i
+    ws.cell(r,1,"").fill = hfill(CREAM); ws.cell(r,1).font = font()
+    ws.cell(r,2,None); ws.cell(r,2).number_format = "#,##0.00"; ws.cell(r,2).fill = hfill(CREAM)
+    ws.cell(r,3,None); ws.cell(r,3).number_format = "#,##0.00"; ws.cell(r,3).fill = hfill(CREAM)
+    ws.cell(r,4,f'=IF(B{r}="","",B{r}-C{r})'); ws.cell(r,4).number_format = "#,##0.00"; ws.cell(r,4).fill = hfill(LT_SAGE)
+    ws.cell(r,5,f'=IF(B{r}=0,0,C{r}/B{r})'); ws.cell(r,5).number_format = "0%"; ws.cell(r,5).fill = hfill(CARD)
+    ws.cell(r,6,"").fill = hfill(CREAM); ws.cell(r,6).font = font()
+    ws.cell(r,7,"").fill = hfill(CREAM); ws.cell(r,7).font = font()
 ws.conditional_formatting.add(
-    "E3:E7",
-    DataBarRule(start_type="num", start_value=0,
-                end_type="num",   end_value=1,
-                color=SAGE))
+    "E3:E17",
+    ColorScaleRule(start_type='num', start_value=0, start_color='FFFFFFFF',
+                   end_type='num', end_value=1, end_color='FF8B9A7A'))
 
 # ═══════════════════════════════════════════════════════════════════════════
 # SINKING FUNDS
@@ -957,11 +1000,17 @@ for i, (name, contrib, bal, target) in enumerate(SAMPLE_SF):
     ws.cell(r,4,target);  ws.cell(r,4).number_format = "#,##0.00"; ws.cell(r,4).fill = hfill(CREAM)
     ws.cell(r,5,f'=IF(D{r}=0,0,C{r}/D{r})'); ws.cell(r,5).number_format = "0%"; ws.cell(r,5).fill = hfill(CARD)
 
+for i in range(11):
+    r = 7 + i
+    ws.cell(r,1,"").fill = hfill(CREAM); ws.cell(r,1).font = font()
+    ws.cell(r,2,None); ws.cell(r,2).number_format = "#,##0.00"; ws.cell(r,2).fill = hfill(CREAM)
+    ws.cell(r,3,None); ws.cell(r,3).number_format = "#,##0.00"; ws.cell(r,3).fill = hfill(CREAM)
+    ws.cell(r,4,None); ws.cell(r,4).number_format = "#,##0.00"; ws.cell(r,4).fill = hfill(CREAM)
+    ws.cell(r,5,f'=IF(D{r}=0,0,C{r}/D{r})'); ws.cell(r,5).number_format = "0%"; ws.cell(r,5).fill = hfill(CARD)
 ws.conditional_formatting.add(
-    "E3:E6",
-    DataBarRule(start_type="num", start_value=0,
-                end_type="num",   end_value=1,
-                color=SAGE))
+    "E3:E17",
+    ColorScaleRule(start_type='num', start_value=0, start_color='FFFFFFFF',
+                   end_type='num', end_value=1, end_color='FF8B9A7A'))
 
 # ═══════════════════════════════════════════════════════════════════════════
 # NET WORTH
@@ -991,15 +1040,22 @@ for i, (name, val) in enumerate(SAMPLE_ASSETS):
     ws.cell(r,1,name).fill = hfill(CREAM); ws.cell(r,1).font = font()
     ws.cell(r,2,val); ws.cell(r,2).number_format = "#,##0.00"; ws.cell(r,2).fill = hfill(CREAM)
 
-asset_total_row = 8
+# blank asset rows to reach 12 total
+for i in range(7):
+    r = 3 + len(SAMPLE_ASSETS) + i
+    ws.cell(r,1,"").fill = hfill(CREAM); ws.cell(r,1).font = font()
+    ws.cell(r,2,None); ws.cell(r,2).number_format = "#,##0.00"; ws.cell(r,2).fill = hfill(CREAM)
+
+asset_total_row = 3 + 12  # row 15
 ws.cell(asset_total_row,1,"Total Assets").fill = hfill(SAGE); ws.cell(asset_total_row,1).font = font(bold=True,color=WHITE)
 ws.cell(asset_total_row,2,f'=SUM(B3:B{asset_total_row-1})')
 ws.cell(asset_total_row,2).number_format = "#,##0.00"
 ws.cell(asset_total_row,2).fill = hfill(SAGE)
 ws.cell(asset_total_row,2).font = font(bold=True,color=WHITE)
 
-ws.cell(10,1,"LIABILITIES").fill = hfill(ROSE); ws.cell(10,1).font = font(bold=True,color=WHITE)
-ws.cell(10,2,"Balance").fill = hfill(ROSE); ws.cell(10,2).font = font(bold=True,color=WHITE)
+liab_start_row = asset_total_row + 2  # row 17
+ws.cell(liab_start_row,1,"LIABILITIES").fill = hfill(ROSE); ws.cell(liab_start_row,1).font = font(bold=True,color=WHITE)
+ws.cell(liab_start_row,2,"Balance").fill = hfill(ROSE); ws.cell(liab_start_row,2).font = font(bold=True,color=WHITE)
 
 SAMPLE_LIABILITIES = [
     ("Mortgage",     180000),
@@ -1007,23 +1063,31 @@ SAMPLE_LIABILITIES = [
     ("Credit Card",    3500),
     ("Student Loan",  25000),
 ]
+liab_data_start = liab_start_row + 1  # row 18
 for i, (name, val) in enumerate(SAMPLE_LIABILITIES):
-    r = 11 + i
+    r = liab_data_start + i
     ws.cell(r,1,name).fill = hfill(CREAM); ws.cell(r,1).font = font()
     ws.cell(r,2,val); ws.cell(r,2).number_format = "#,##0.00"; ws.cell(r,2).fill = hfill(CREAM)
 
-liab_total_row = 15
+# blank liability rows to reach 12 total
+for i in range(8):
+    r = liab_data_start + len(SAMPLE_LIABILITIES) + i
+    ws.cell(r,1,"").fill = hfill(CREAM); ws.cell(r,1).font = font()
+    ws.cell(r,2,None); ws.cell(r,2).number_format = "#,##0.00"; ws.cell(r,2).fill = hfill(CREAM)
+
+liab_total_row = liab_data_start + 12  # row 30
 ws.cell(liab_total_row,1,"Total Liabilities").fill = hfill(ROSE); ws.cell(liab_total_row,1).font = font(bold=True,color=WHITE)
-ws.cell(liab_total_row,2,f'=SUM(B11:B{liab_total_row-1})')
+ws.cell(liab_total_row,2,f'=SUM(B{liab_data_start}:B{liab_total_row-1})')
 ws.cell(liab_total_row,2).number_format = "#,##0.00"
 ws.cell(liab_total_row,2).fill = hfill(ROSE)
 ws.cell(liab_total_row,2).font = font(bold=True,color=WHITE)
 
-ws.cell(17,1,"NET WORTH").fill = hfill(GOLD); ws.cell(17,1).font = font(bold=True,size=13)
-ws.cell(17,2,f'=B{asset_total_row}-B{liab_total_row}')
-ws.cell(17,2).number_format = "#,##0.00"
-ws.cell(17,2).fill = hfill(GOLD)
-ws.cell(17,2).font = font(bold=True,size=13)
+net_worth_row = liab_total_row + 2  # row 32
+ws.cell(net_worth_row,1,"NET WORTH").fill = hfill(GOLD); ws.cell(net_worth_row,1).font = font(bold=True,size=13)
+ws.cell(net_worth_row,2,f'=B{asset_total_row}-B{liab_total_row}')
+ws.cell(net_worth_row,2).number_format = "#,##0.00"
+ws.cell(net_worth_row,2).fill = hfill(GOLD)
+ws.cell(net_worth_row,2).font = font(bold=True,size=13)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # SUBSCRIPTIONS
@@ -1061,7 +1125,16 @@ for i, (name, mo, cat, rd, status) in enumerate(SAMPLE_SUBS):
     ws.cell(r,5,rd).fill = hfill(CREAM);  ws.cell(r,5).font = font()
     ws.cell(r,6,status).fill = hfill(CARD); ws.cell(r,6).font = font()
 
-total_row = 3 + len(SAMPLE_SUBS)
+SUBS_BLANK = 12  # add 12 blank rows after samples
+for i in range(SUBS_BLANK):
+    r = 3 + len(SAMPLE_SUBS) + i
+    ws.cell(r,1,"").fill = hfill(CREAM); ws.cell(r,1).font = font()
+    ws.cell(r,2,None); ws.cell(r,2).number_format = "#,##0.00"; ws.cell(r,2).fill = hfill(CREAM)
+    ws.cell(r,3,f'=IF(B{r}="","",B{r}*12)'); ws.cell(r,3).number_format = "#,##0.00"; ws.cell(r,3).fill = hfill(LT_SAGE)
+    ws.cell(r,4,"").fill = hfill(CREAM); ws.cell(r,4).font = font()
+    ws.cell(r,5,"").fill = hfill(CREAM); ws.cell(r,5).font = font()
+    ws.cell(r,6,"").fill = hfill(CARD); ws.cell(r,6).font = font()
+total_row = 3 + len(SAMPLE_SUBS) + SUBS_BLANK
 ws.cell(total_row,1,"Monthly Total").fill = hfill(SAGE); ws.cell(total_row,1).font = font(bold=True,color=WHITE)
 ws.cell(total_row,2,f'=SUM(B3:B{total_row-1})'); ws.cell(total_row,2).number_format = "#,##0.00"
 ws.cell(total_row,2).fill = hfill(SAGE); ws.cell(total_row,2).font = font(bold=True,color=WHITE)
@@ -1102,7 +1175,14 @@ for i, cat in enumerate(INCOME_CATS):
     ws.cell(r,14).number_format = "#,##0.00"
     ws.cell(r,14).fill = hfill(LT_SAGE)
 
-total_r = 3 + len(INCOME_CATS)
+IT_BLANK = 12
+for i in range(IT_BLANK):
+    r = 3 + len(INCOME_CATS) + i
+    ws.cell(r,1,"").fill = hfill(CREAM); ws.cell(r,1).font = font()
+    for m in range(1,13):
+        ws.cell(r,m+1,""); ws.cell(r,m+1).number_format = "#,##0.00"; ws.cell(r,m+1).fill = hfill(CARD)
+    ws.cell(r,14,""); ws.cell(r,14).number_format = "#,##0.00"; ws.cell(r,14).fill = hfill(LT_SAGE)
+total_r = 3 + len(INCOME_CATS) + IT_BLANK
 ws.cell(total_r,1,"Total Income").fill = hfill(SAGE); ws.cell(total_r,1).font = font(bold=True,color=WHITE)
 for m in range(1,13):
     ws.cell(total_r,m+1,f'=SUM({get_column_letter(m+1)}3:{get_column_letter(m+1)}{total_r-1})')
@@ -1472,7 +1552,7 @@ print("Sheets:", ", ".join(wb.sheetnames))
 from openpyxl import load_workbook
 
 print("\n--- VERIFICATION ---")
-wb2 = load_workbook(output_path)
+wb2 = load_workbook(output_path, data_only=True)
 print(f"Sheet count: {len(wb2.sheetnames)}")
 
 error_vals = {"#REF!", "#DIV/0!", "#VALUE!", "#N/A", "#NAME?", "#NUM!", "#NULL!"}
